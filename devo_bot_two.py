@@ -20,7 +20,7 @@ from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # --- CONFIGURATION ---
 # using gemini-2.5-flash-lite for free tier testing
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.5-flash-lite"
 
 # Permissive Safety Settings
 SAFETY_SETTINGS = {
