@@ -190,7 +190,7 @@ def generate_quotes(reference, bible_text):
         print(f"Error in Quote Generation: {e}")
         return None
 
-# --- STEP 4: Send Email ---
+# --- STEP 4: Send Email (DESIGN UPGRADE) ---
 def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_strong_html):
     print(f"\n--- Step 4: Sending Email ---")
     
@@ -206,58 +206,198 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
     devotional_html = markdown.markdown(devotional)
     quotes_html = markdown.markdown(quotes)
     
-    # Handle cases where extra devotionals might be None
-    tozer_section = f"""
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-    <h2 style="color: #8e44ad;">Tozer on Leadership</h2>
-    <div style="background-color: #f4ecf7; padding: 15px; border-radius: 5px;">
-        {tozer_html}
-    </div>
-    """ if tozer_html else ""
+    # Helper to create sections only if content exists
+    tozer_section = ""
+    if tozer_html:
+        tozer_section = f"""
+        <div class="card">
+            <div class="card-header" style="background-color: #8e44ad;">Tozer on Leadership</div>
+            <div class="card-body">
+                {tozer_html}
+            </div>
+        </div>
+        """
 
-    standing_strong_section = f"""
-    <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-    <h2 style="color: #c0392b;">Standing Strong Through the Storm</h2>
-    <div style="background-color: #fdedec; padding: 15px; border-radius: 5px;">
-        {standing_strong_html}
-    </div>
-    """ if standing_strong_html else ""
-    
+    standing_strong_section = ""
+    if standing_strong_html:
+        standing_strong_section = f"""
+        <div class="card">
+            <div class="card-header" style="background-color: #c0392b;">Standing Strong Through the Storm</div>
+            <div class="card-body">
+                {standing_strong_html}
+            </div>
+        </div>
+        """
+
+    # --- THE HTML TEMPLATE ---
     html_body = f"""
+    <!DOCTYPE html>
     <html>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-        <h1 style="color: #2c3e50;">Daily Reading: {reference}</h1>
-        
-        <div style="background-color: #f9f9f9; padding: 15px; border-left: 5px solid #3498db; margin-bottom: 20px;">
-            <h3 style="margin-top: 0;">Scripture (CJB)</h3>
-            <p style="white-space: pre-wrap;">{bible_text}</p>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Daily Reading: {reference}</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap');
+
+            body {{
+                margin: 0;
+                padding: 0;
+                background-color: #f4f7f6;
+                font-family: 'Merriweather', Georgia, serif; /* Excellent for reading long text */
+                font-size: 18px;
+                line-height: 1.8;
+                color: #333333;
+                -webkit-font-smoothing: antialiased;
+            }}
+
+            /* The Main Container */
+            .container {{
+                max-width: 700px;
+                margin: 40px auto;
+                background-color: transparent;
+            }}
+
+            /* Headers */
+            h1, h2, h3, h4 {{
+                font-family: 'Archivo', sans-serif;
+                color: #2c3e50;
+                margin-top: 0;
+            }}
+
+            h1 {{ font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }}
+            h2 {{ font-size: 24px; font-weight: 600; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+            h3 {{ font-size: 20px; font-weight: 600; color: #34495e; margin-top: 25px; }}
+
+            /* The Header Banner */
+            .email-header {{
+                background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+                color: #ffffff;
+                padding: 40px 30px;
+                text-align: center;
+                border-radius: 12px 12px 0 0;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            }}
+            .email-header h1 {{ color: #ffffff; margin: 0; }}
+            .email-header p {{ font-family: 'Archivo', sans-serif; font-size: 16px; opacity: 0.9; margin-top: 5px; }}
+
+            /* Content Cards */
+            .card {{
+                background-color: #ffffff;
+                border-radius: 12px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                margin-bottom: 30px;
+                overflow: hidden;
+            }}
+
+            .card-header {{
+                font-family: 'Archivo', sans-serif;
+                font-weight: 700;
+                font-size: 14px;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                color: #ffffff;
+                padding: 12px 30px;
+            }}
+
+            .card-body {{
+                padding: 30px;
+            }}
+
+            /* Specific Styles */
+            .scripture-text {{
+                font-family: 'Merriweather', serif;
+                color: #444;
+                background-color: #fff;
+            }}
+            
+            .devotional-text {{
+                color: #2c3e50;
+            }}
+            
+            /* Bloom's Taxonomy Questions Styling */
+            ul {{ padding-left: 20px; }}
+            li {{ margin-bottom: 10px; }}
+            strong {{ color: #2980b9; }}
+
+            /* Quotes Styling */
+            blockquote {{
+                border-left: 4px solid #f1c40f;
+                margin: 0;
+                padding-left: 20px;
+                font-style: italic;
+                color: #555;
+            }}
+
+            /* Footer */
+            .footer {{
+                text-align: center;
+                font-family: 'Archivo', sans-serif;
+                font-size: 12px;
+                color: #95a5a6;
+                margin-top: 40px;
+                margin-bottom: 40px;
+            }}
+
+            /* Mobile Tweaks */
+            @media only screen and (max-width: 600px) {{
+                .container {{ margin: 0; width: 100% !important; }}
+                .card {{ border-radius: 0; }}
+                .email-header {{ border-radius: 0; }}
+                .card-body {{ padding: 20px; }}
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            
+            <!-- Header -->
+            <div class="email-header">
+                <h1>Daily Reading</h1>
+                <p>{reference}</p>
+            </div>
+
+            <!-- Scripture Card -->
+            <div class="card">
+                <div class="card-header" style="background-color: #34495e;">Scripture (CJB)</div>
+                <div class="card-body scripture-text">
+                    {bible_text}
+                </div>
+            </div>
+
+            <!-- Main Devotional Card -->
+            <div class="card">
+                <div class="card-header" style="background-color: #2980b9;">Disciple-Leader Insight</div>
+                <div class="card-body devotional-text">
+                    {devotional_html}
+                </div>
+            </div>
+
+            <!-- Quotes Card -->
+            <div class="card">
+                <div class="card-header" style="background-color: #f39c12;">Contextual Prayer Quotes</div>
+                <div class="card-body" style="background-color: #fffcf5;">
+                    {quotes_html}
+                </div>
+            </div>
+
+            <!-- Extra Devotionals -->
+            {tozer_section}
+            {standing_strong_section}
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>Generated by your Disciple-Leader AI Assistant.</p>
+                <p>Holistic Flourishing • Spirit-Led Innovation</p>
+            </div>
+
         </div>
-
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-
-        <h2 style="color: #2c3e50;">Disciple-Leader Insight</h2>
-        {devotional_html}
-
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
-
-        <h2 style="color: #27ae60;">Contextual Prayer Quotes</h2>
-        <div style="background-color: #e8f6f3; padding: 15px; border-radius: 5px;">
-            {quotes_html}
-        </div>
-
-        {tozer_section}
-
-        {standing_strong_section}
-        
-        <p style="font-size: 12px; color: #888; margin-top: 40px;">
-            Generated by your Disciple-Leader AI Assistant.
-        </p>
-      </body>
+    </body>
     </html>
     """
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = f"Daily Reading & Devotional: {reference}"
+    msg["Subject"] = f"Daily Reading: {reference}"
     msg["From"] = sender_email
     msg["To"] = receiver_email
     msg.attach(MIMEText(html_body, "html"))
