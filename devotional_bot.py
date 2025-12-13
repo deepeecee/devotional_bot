@@ -186,7 +186,7 @@ def get_bible_text(reference):
 # --- STEP 3a: Generate Devotional ---
 def generate_devotional(reference, bible_text):
     print(f"\n--- Step 3a: Generating Devotional for {reference} ---")
-    api_key = "AIzaSyBjpzeps1zjeaT6CXRpk4AMpVKznUGr8k8"
+    api_key = os.getenv("GOOGLE_API_KEY") 
     genai.configure(api_key=api_key)
     
     user_prompt = f"""
