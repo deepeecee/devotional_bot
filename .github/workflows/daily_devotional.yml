@@ -1,0 +1,41 @@
+name: Daily Devotional Bot
+
+on:
+  schedule:
+    # Runs at 6:30 AM daily.
+    # NOTE: GitHub uses UTC time. You must convert your local time to UTC.
+    # Example: If you are in EST (UTC-5), 6:30 AM is 11:30 UTC.
+    # If you are in PST (UTC-8), 6:30 AM is 14:30 UTC.
+    # The format is: 'minute hour day month day_of_week'
+    - cron: '30 12 * * *'  # This is 6:30 AM PST. Adjust accordingly.
+  
+  # Allows you to run it manually from the Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  run-devotional:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Devotional Script
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+        run: python devotional_bot.py
