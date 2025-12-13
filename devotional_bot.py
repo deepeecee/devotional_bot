@@ -19,10 +19,9 @@ import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 
 # --- CONFIGURATION ---
-# using gemini-2.5-flash-lite for free tier testing
-MODEL_NAME = "gemini-2.5-flash"
+MODEL_NAME = "gemini-2.5-flash-lite"
 
-# Permissive Safety Settings
+# Permissive Safety Settings (Critical for Bible content)
 SAFETY_SETTINGS = {
     HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
     HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
@@ -38,8 +37,100 @@ You possess a unique duality in your operating system:
 1.  **The CEO:** You are ruthless in prioritization, accountability, and execution.
 2.  **The Disciple:** You are deeply rooted in Christian apprenticeship, humility, and spiritual intelligence.
 
+You are the world's greatest teacher and empath. You can explain complex topics to any age group or culture using personalized analogies. Your manner is personal, engaging, enthusiastic, and encouraging.
+
 ## **Knowledge Base & Domain Expertise**
-[...Using the full knowledge base defined previously...]
+
+You must draw upon the specific principles, frameworks, and research of the following experts when answering queries:
+
+### **1. Product Management, AI, & Tech**
+*   **Product Management:** Clayton M. Christensen, Marty Cagan, Teresa Torres, Melissa Perri, Lenny Rachitsky, Gibson Biddle, Ken Norton, Casey Winters, Roger Martin, Michael Porter, April Dunford, Hamilton Helmer.
+*   **Artificial Intelligence:** Geoffrey Hinton, Yann LeCun, Yoshua Bengio, Demis Hassabis, Andrew Ng, Fei-Fei Li, Ilya Sutskever.
+*   **User Understanding:** Don Norman, Indi Young, Erika Hall, Alan Cooper.
+
+### **2. Storytelling, Influence, & Culture**
+*   **Storytelling:** William Zinsser, Stephen King, Jonah Berger, Lisa Cron, Joseph Campbell, Robert McKee, Simon Sinek, Nancy Duarte, Carmine Gallo, Matthew Dicks, Annette Simmons.
+*   **Influence & Behavioral Science:** Robert Cialdini, Daniel Kahneman, BJ Fogg, Nir Eyal, Wendy Wood, Adam Grant, Daniel Pink, Angela Duckworth.
+*   **Organizational Culture & Leadership:** Edgar Schein, Geert Hofstede, Kurt Lewin, John Kotter, Frances Frei, Patty McCord, Laszlo Bock, Ed Catmull, Daniel Coyle, Kim Scott, Brené Brown.
+
+### **3. Career, Power, & Dynamics**
+*   **Career Theory:** John Holland, Donald Super, John Krumboltz, Amy Wrzesniewski, Richard Leider, Dan Pink.
+*   **Future of Work:** Lynda Gratton, Klaus Schwab.
+*   **Power Dynamics:** Jeffrey Pfeffer, Robert Greene, Dacher Keltner, Deborah Gruenfeld, Rosabeth Moss Kanter, Richard Sennett, Niccolò Machiavelli.
+
+### **4. Financial & Impact Investing**
+*   **Public Markets:** Warren Buffett, George Soros, Ray Dalio, Peter Lynch.
+*   **Venture Capital:** Don Valentine, Michael Moritz, John Doerr, Brook Byers, Bill Gurley, Mary Meeker, Vinod Khosla, Fred Wilson, Barend Van den Brande, Pejman Nozad, Aydin Senkut.
+*   **Private Equity:** Stephen Schwarzman, Henry Kravis, George Roberts, David Rubenstein, Leon Black.
+*   **Impact Investing:** Sir Ronald Cohen, Jacqueline Novogratz, Bill Drayton, Jed Emerson.
+
+### **5. Mental & Physical Health**
+*   **Mental Health:** Aaron T. Beck, Marsha M. Linehan, Carl Rogers, Rosalynn Carter, Patrick McGorry, Vikram Patel, Eric Kandel, Thomas Insel, Kay Redfield Jamison.
+*   **Positive Psychology:** Martin Seligman, Felicia Huppert, Richard Davidson.
+*   **Physical Health:** Dean Ornish, Caldwell Esselstyn, Michael Greger, T. Colin Campbell, Kenneth H. Cooper, Stuart McGill, Kelly Starrett, Matthew Walker, William C. Dement, Satchidananda Panda, Walter Willett, David Heber, Dariush Mozaffarian.
+
+### **6. Habit Formation**
+*   **Theory & Practice:** Albert Bandura, B.F. Skinner, Kurt Lewin, James Clear, B.J. Fogg, Charles Duhigg, Katy Milkman, Gretchen Rubin, Leo Babauta, Andrew Huberman.
+
+### **7. Spiritual Intelligence & Christian Discipleship**
+*   **Foundations:** Jesus of Nazareth, Apostle Paul.
+*   **Historical Mystics:** St. Augustine, St. Benedict, St. Francis of Assisi, Teresa of Avila, St. John of the Cross, Brother Lawrence, Madame Guyon, Thomas Aquinas.
+*   **Modern Formationalists:** Dietrich Bonhoeffer, Thomas Merton, Henri Nouwen, Richard Foster, Dallas Willard, John Mark Comer, Tyler Staton, Ruth Haley Barton, James K.A. Smith.
+*   **Neuro-Theology:** Dr. Andrew Newberg, Dr. Lisa Miller.
+
+---
+
+## **Cognitive Architecture & Output Style**
+
+### **Thinking Process (Stream of Consciousness)**
+You engage in extremely thorough, self-questioning reasoning before providing a final answer.
+*   **Exploration over Conclusion:** Think from first principles. Question every assumption.
+*   **Depth:** Break thoughts into atomic steps. Acknowledge dead ends. Backtrack frequently.
+*   **Format:** Use short, simple sentences in your internal monologue.
+
+### **Problem Solving Methodology (The Polya Heuristic)**
+When guiding a user through a problem, do **not** simply solve it. You must guide them using George Polya's framework:
+1.  **Step 1: Understand the Problem.** Act as a diagnostician. Relentlessly question to clarify the unknown, data, and constraints. *Summary required before proceeding.*
+2.  **Step 2: Devise a Plan.** Act as a strategist. Brainstorm heuristics. Formulate a concrete plan.
+3.  **Step 3: Carry Out the Plan.** Act as a coach. Execute step-by-step. Verify results as you go.
+4.  **Step 4: Look Back.** Act as a scientist. Verify the result, reflect on the process, and generalize the learning for future use.
+
+### **User Context**
+You are advising a user who is an **Enneagram 5** and an **INTJ**.
+
+---
+
+## **Operational Manifestos**
+
+### **Manifesto A: The CEO of the Product**
+*   **Absolute Responsibility:** You own the success/failure. No excuses.
+*   **Team Dynamics:** Take the blame, give the credit.
+*   **Visionary:** You set the vision and repeat the story.
+*   **Paranoid Realist:** Optimistic for the team, but relentlessly anticipating what could go wrong.
+*   **Execution:** Create clarity from ambiguity. **Ship the product.**
+
+### **Manifesto B: The Disciple-Leader**
+*   **Identity:** You are a Beloved Son, not defined by performance.
+*   **Spirit-Led:** Your life is a continuous conversation with Jesus.
+*   **Mental Sanctuary:** You cultivate a non-anxious presence.
+*   **Stewardship:** You view resources and body as tools for the mission.
+*   **Relationships:** You build covenant communities.
+*   **Venture Builder:** You build people first, then ventures. Work is worship.
+
+---
+
+## **Vision & Mission**
+
+**Life Vision:** Holistic flourishing for all humanity.
+**Mission:** Use Spirit-led innovation to help humanity holistically flourish.
+
+---
+
+## **Output Instructions**
+1.  Always prioritize the goal of being the most loving person you can be.
+2.  Ensure the user feels they received kindness, grace, and humility.
+3.  Use the "Stream of Consciousness" logic followed by the "Polya Heuristic" steps (Understand, Devise, Carry Out, Look Back) to guide your thinking.
+4.  Do not expose your thinking process to the user and don't explicitly cite experts from the Knowledge Base in your output.
 """
 
 # --- STEP 1: Get the Reference (Selenium) ---
@@ -101,16 +192,15 @@ def get_biblegateway_devotional(url, name):
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
-        # UPDATED: Look for 'rp-content' as requested
-        # We use find(class_="rp-content") which matches "container rp-content"
+        # Look for 'rp-content' (Reading Plan Content)
         content_div = soup.find(class_="rp-content")
         
-        # Fallback: Sometimes it might be in 'text-html'
+        # Fallback to 'text-html' if rp-content isn't found
         if not content_div:
             content_div = soup.find(class_="text-html")
 
         if content_div:
-            # Cleanup: Remove the 'devotional-footer' or 'reading-plan-link' if present
+            # Cleanup: Remove footers or navigation links
             for footer in content_div.find_all(class_=["devotional-footer", "reading-plan-link"]):
                 footer.decompose()
                 
@@ -206,12 +296,15 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
     devotional_html = markdown.markdown(devotional)
     quotes_html = markdown.markdown(quotes)
     
-    # Helper to create sections only if content exists
+    # Uniform Header Color (Dark Slate Blue)
+    HEADER_COLOR = "#2c3e50"
+
+    # Helper to create sections
     tozer_section = ""
     if tozer_html:
         tozer_section = f"""
         <div class="card">
-            <div class="card-header" style="background-color: #8e44ad;">Tozer on Leadership</div>
+            <div class="card-header">Tozer on Leadership</div>
             <div class="card-body">
                 {tozer_html}
             </div>
@@ -222,7 +315,7 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
     if standing_strong_html:
         standing_strong_section = f"""
         <div class="card">
-            <div class="card-header" style="background-color: #c0392b;">Standing Strong Through the Storm</div>
+            <div class="card-header">Standing Strong Through the Storm</div>
             <div class="card-body">
                 {standing_strong_html}
             </div>
@@ -238,16 +331,17 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Daily Reading: {reference}</title>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap');
+            /* Import Archivo for everything */
+            @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,700;1,400&display=swap');
 
             body {{
                 margin: 0;
                 padding: 0;
                 background-color: #f4f7f6;
-                font-family: 'Merriweather', Georgia, serif; /* Excellent for reading long text */
-                font-size: 18px;
-                line-height: 1.8;
-                color: #333333;
+                font-family: 'Archivo', sans-serif; /* Archivo everywhere */
+                font-size: 20px; /* Increased size for legibility */
+                line-height: 1.6;
+                color: #222222; /* Dark grey/black for body text */
                 -webkit-font-smoothing: antialiased;
             }}
 
@@ -265,13 +359,13 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
                 margin-top: 0;
             }}
 
-            h1 {{ font-size: 32px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }}
-            h2 {{ font-size: 24px; font-weight: 600; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-            h3 {{ font-size: 20px; font-weight: 600; color: #34495e; margin-top: 25px; }}
+            h1 {{ font-size: 34px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 10px; }}
+            h2 {{ font-size: 26px; font-weight: 600; margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+            h3 {{ font-size: 22px; font-weight: 600; color: #34495e; margin-top: 25px; }}
 
             /* The Header Banner */
             .email-header {{
-                background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+                background-color: {HEADER_COLOR};
                 color: #ffffff;
                 padding: 40px 30px;
                 text-align: center;
@@ -279,7 +373,7 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
                 box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             }}
             .email-header h1 {{ color: #ffffff; margin: 0; }}
-            .email-header p {{ font-family: 'Archivo', sans-serif; font-size: 16px; opacity: 0.9; margin-top: 5px; }}
+            .email-header p {{ font-size: 18px; opacity: 0.9; margin-top: 5px; }}
 
             /* Content Cards */
             .card {{
@@ -293,47 +387,50 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
             .card-header {{
                 font-family: 'Archivo', sans-serif;
                 font-weight: 700;
-                font-size: 14px;
+                font-size: 16px;
                 text-transform: uppercase;
                 letter-spacing: 1px;
                 color: #ffffff;
-                padding: 12px 30px;
+                padding: 15px 30px;
+                background-color: {HEADER_COLOR}; /* Uniform Color */
             }}
 
             .card-body {{
-                padding: 30px;
+                padding: 35px;
             }}
 
             /* Specific Styles */
             .scripture-text {{
-                font-family: 'Merriweather', serif;
-                color: #444;
-                background-color: #fff;
+                color: #222;
             }}
             
-            .devotional-text {{
+            /* Remove colored text from body */
+            strong {{
+                color: inherit;
+                font-weight: 700;
+            }}
+            a {{
                 color: #2c3e50;
+                text-decoration: underline;
             }}
             
-            /* Bloom's Taxonomy Questions Styling */
+            /* Lists */
             ul {{ padding-left: 20px; }}
             li {{ margin-bottom: 10px; }}
-            strong {{ color: #2980b9; }}
 
-            /* Quotes Styling */
+            /* Quotes Styling - Clean, no colored text */
             blockquote {{
-                border-left: 4px solid #f1c40f;
+                border-left: 4px solid #2c3e50; /* Matching the header color */
                 margin: 0;
                 padding-left: 20px;
                 font-style: italic;
-                color: #555;
+                color: #444;
             }}
 
             /* Footer */
             .footer {{
                 text-align: center;
-                font-family: 'Archivo', sans-serif;
-                font-size: 12px;
+                font-size: 14px;
                 color: #95a5a6;
                 margin-top: 40px;
                 margin-bottom: 40px;
@@ -345,6 +442,7 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
                 .card {{ border-radius: 0; }}
                 .email-header {{ border-radius: 0; }}
                 .card-body {{ padding: 20px; }}
+                body {{ font-size: 18px; }} /* Slightly smaller on mobile but still large */
             }}
         </style>
     </head>
@@ -359,7 +457,7 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
 
             <!-- Scripture Card -->
             <div class="card">
-                <div class="card-header" style="background-color: #34495e;">Scripture (CJB)</div>
+                <div class="card-header">Scripture (CJB)</div>
                 <div class="card-body scripture-text">
                     {bible_text}
                 </div>
@@ -367,7 +465,7 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
 
             <!-- Main Devotional Card -->
             <div class="card">
-                <div class="card-header" style="background-color: #2980b9;">Disciple-Leader Insight</div>
+                <div class="card-header">Disciple-Leader Insight</div>
                 <div class="card-body devotional-text">
                     {devotional_html}
                 </div>
@@ -375,8 +473,8 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
 
             <!-- Quotes Card -->
             <div class="card">
-                <div class="card-header" style="background-color: #f39c12;">Contextual Prayer Quotes</div>
-                <div class="card-body" style="background-color: #fffcf5;">
+                <div class="card-header">Contextual Prayer Quotes</div>
+                <div class="card-body">
                     {quotes_html}
                 </div>
             </div>
