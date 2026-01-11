@@ -234,11 +234,7 @@ def generate_devotional(reference, bible_text):
     3. Build connections to other Bible passages.
     4. Bring deeper revelation of who God is.
     
-    Highlight 3 important practices the reader should implement today.
-    
-    Create a section-by-section outline with:
-    1. Three profound insights per section.
-    2. Three key questions at Bloom's Taxonomy Level 6 with responses.
+    Based on this devotional, highlight 3 important practices the reader should implement today.
     """
 
     try:
