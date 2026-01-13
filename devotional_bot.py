@@ -135,6 +135,9 @@ You are advising a user who is an **Enneagram 5** and an **INTJ**.
 
 # --- STEP 1: Get the Reference (Selenium) ---
 def get_todays_reference():
+    """Extract all Bible passage references from wearechurchreading.com.
+    Returns a semicolon-separated string of all passages (e.g., 'Genesis 15-16; Matthew 6:1-15').
+    """
     print("--- Step 1: Fetching Daily Reading Reference ---")
     chrome_options = Options()
     chrome_options.add_argument("--headless") 
@@ -148,10 +151,24 @@ def get_todays_reference():
         url = "https://www.wearechurchreading.com/"
         driver.get(url)
         wait = WebDriverWait(driver, 20)
-        element = wait.until(EC.presence_of_element_located((By.CLASS_NAME, "BiblePassages__text")))
-        reference = element.text.strip()
-        print(f"Success! Found reference: {reference}")
-        return reference
+        
+        # Wait for at least one passage element to load
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, "BiblePassages__text")))
+        
+        # Find ALL passage elements (there may be multiple)
+        elements = driver.find_elements(By.CLASS_NAME, "BiblePassages__text")
+        
+        # Extract text from each and filter out empty strings
+        references = [el.text.strip() for el in elements if el.text.strip()]
+        
+        if references:
+            # Combine with semicolons for BibleGateway URL format
+            combined_reference = "; ".join(references)
+            print(f"Success! Found {len(references)} passage(s): {combined_reference}")
+            return combined_reference
+        else:
+            print("Error: No references found")
+            return None
     except Exception as e:
         print(f"Error in Step 1: {e}")
         return None
@@ -160,6 +177,13 @@ def get_todays_reference():
 
 # --- STEP 2: Get the Bible Text (Requests) ---
 def get_bible_text(reference):
+    """Fetch Bible text from BibleGateway for one or more references.
+    
+    The reference can include multiple passages separated by semicolons,
+    e.g., 'Genesis 15-16; Matthew 6:1-15'
+    
+    BibleGateway returns each passage in a div with class 'result-text-style-normal text-html'.
+    """
     print(f"\n--- Step 2: Fetching Text for {reference} ---")
     encoded_ref = urllib.parse.quote(reference)
     url = f"https://www.biblegateway.com/passage/?search={encoded_ref}&version=CJB"
@@ -169,15 +193,36 @@ def get_bible_text(reference):
         response = requests.get(url, headers=headers)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
-        passage_content = soup.find(class_="passage-text")
         
+        # Find passage text divs - look for 'result-text-style-normal' which contains actual Scripture
+        # This is more specific than 'version-CJB' which also includes navigation elements
+        passage_divs = soup.find_all('div', class_='result-text-style-normal')
+        
+        if passage_divs:
+            all_passages = []
+            for div in passage_divs:
+                # Remove footnotes and chapter links for cleaner text
+                for element in div.find_all(class_=['footnotes', 'full-chap-link']):
+                    element.decompose()
+                
+                passage_text = div.get_text(separator=' ', strip=True)
+                if passage_text:
+                    all_passages.append(passage_text)
+            
+            if all_passages:
+                full_text = "\n\n---\n\n".join(all_passages)
+                print(f"Success! Retrieved {len(passage_divs)} passage(s), {len(full_text)} total characters.")
+                return full_text
+        
+        # Fallback to original method if result-text-style-normal divs not found
+        passage_content = soup.find(class_="passage-text")
         if passage_content:
             full_text = passage_content.get_text(separator=' ', strip=True)
-            print(f"Success! Retrieved {len(full_text)} characters of text.")
+            print(f"Success (fallback)! Retrieved {len(full_text)} characters of text.")
             return full_text
-        else:
-            print("Error: Could not find 'passage-text' class on Bible Gateway.")
-            return None
+        
+        print("Error: Could not find passage content on Bible Gateway.")
+        return None
     except Exception as e:
         print(f"Error in Step 2: {e}")
         return None
