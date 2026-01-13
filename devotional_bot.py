@@ -176,13 +176,14 @@ def get_todays_reference():
         driver.quit()
 
 # --- STEP 2: Get the Bible Text (Requests) ---
+# --- STEP 2: Get the Bible Text (Requests) ---
 def get_bible_text(reference):
     """Fetch Bible text from BibleGateway for one or more references.
     
     The reference can include multiple passages separated by semicolons,
     e.g., 'Genesis 15-16; Matthew 6:1-15'
     
-    BibleGateway returns each passage in a div with class 'result-text-style-normal text-html'.
+    Returns a LIST of strings, where each string is a passage text.
     """
     print(f"\n--- Step 2: Fetching Text for {reference} ---")
     encoded_ref = urllib.parse.quote(reference)
@@ -210,16 +211,15 @@ def get_bible_text(reference):
                     all_passages.append(passage_text)
             
             if all_passages:
-                full_text = "\n\n---\n\n".join(all_passages)
-                print(f"Success! Retrieved {len(passage_divs)} passage(s), {len(full_text)} total characters.")
-                return full_text
+                print(f"Success! Retrieved {len(all_passages)} passage(s).")
+                return all_passages
         
         # Fallback to original method if result-text-style-normal divs not found
         passage_content = soup.find(class_="passage-text")
         if passage_content:
             full_text = passage_content.get_text(separator=' ', strip=True)
             print(f"Success (fallback)! Retrieved {len(full_text)} characters of text.")
-            return full_text
+            return [full_text]
         
         print("Error: Could not find passage content on Bible Gateway.")
         return None
@@ -322,7 +322,7 @@ def generate_quotes(reference, bible_text):
         return None
 
 # --- STEP 4: Send Email (DESIGN UPGRADE) ---
-def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_strong_html):
+def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_strong_html):
     print(f"\n--- Step 4: Sending Email ---")
     
     sender_email = os.getenv("EMAIL_SENDER")
@@ -336,6 +336,31 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
     # Convert Markdown to HTML
     devotional_html = markdown.markdown(devotional)
     quotes_html = markdown.markdown(quotes)
+    
+    # Prepare Scripture HTML (Handle multiple passages)
+    scripture_section = ""
+    if isinstance(bible_texts, list):
+        ref_parts = reference.split("; ")
+        for i, text in enumerate(bible_texts):
+            header = ref_parts[i] if i < len(ref_parts) else "Scripture"
+            scripture_section += f"""
+            <div class="card">
+                <div class="card-header">{header} (CJB)</div>
+                <div class="card-body scripture-text">
+                    {text}
+                </div>
+            </div>
+            """
+    else:
+        # Fallback for legacy string input
+        scripture_section = f"""
+        <div class="card">
+            <div class="card-header">Scripture (CJB)</div>
+            <div class="card-body scripture-text">
+                {bible_texts}
+            </div>
+        </div>
+        """
     
     # Uniform Header Color (Dark Slate Blue)
     HEADER_COLOR = "#2c3e50"
@@ -496,13 +521,8 @@ def send_email(reference, bible_text, devotional, quotes, tozer_html, standing_s
                 <p>{reference}</p>
             </div>
 
-            <!-- Scripture Card -->
-            <div class="card">
-                <div class="card-header">Scripture (CJB)</div>
-                <div class="card-body scripture-text">
-                    {bible_text}
-                </div>
-            </div>
+            <!-- Scripture Section -->
+            {scripture_section}
 
             <!-- Main Devotional Card -->
             <div class="card">
@@ -556,8 +576,8 @@ if __name__ == "__main__":
     ref = get_todays_reference()
     
     if ref:
-        # 2. Get Text
-        bible_text = get_bible_text(ref)
+        # 2. Get Text (returns a list now)
+        bible_texts = get_bible_text(ref)
         
         # 2.5 Get Extra Devotionals
         tozer_url = "https://www.biblegateway.com/devotionals/tozer-on-leadership/today"
@@ -566,13 +586,16 @@ if __name__ == "__main__":
         tozer_content = get_biblegateway_devotional(tozer_url, "Tozer on Leadership")
         standing_strong_content = get_biblegateway_devotional(standing_strong_url, "Standing Strong")
         
-        if bible_text:
+        if bible_texts:
+            # Prepare combined text for AI Generation (needs context of all passages)
+            combined_text = "\n\n".join(bible_texts)
+            
             # 3a. Generate AI Devotional
-            devotional_content = generate_devotional(ref, bible_text)
+            devotional_content = generate_devotional(ref, combined_text)
             
             # 3b. Generate Quotes
-            quotes_content = generate_quotes(ref, bible_text)
+            quotes_content = generate_quotes(ref, combined_text)
             
             if devotional_content and quotes_content:
-                # 4. Send Email (with all 4 pieces of content)
-                send_email(ref, bible_text, devotional_content, quotes_content, tozer_content, standing_strong_content)
+                # 4. Send Email (pass the list for separate headers)
+                send_email(ref, bible_texts, devotional_content, quotes_content, tozer_content, standing_strong_content)

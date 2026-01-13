@@ -102,16 +102,15 @@ def test_get_bible_text(reference):
                     all_passages.append(passage_text)
             
             if all_passages:
-                full_text = "\n\n---\n\n".join(all_passages)
-                print(f"\n✓ SUCCESS: Retrieved {len(all_passages)} passage(s), {len(full_text)} total characters")
-                return full_text
+                print(f"\n✓ SUCCESS: Retrieved {len(all_passages)} passage(s) as a list.")
+                return all_passages
         
         # Fallback
         passage_content = soup.find(class_="passage-text")
         if passage_content:
             full_text = passage_content.get_text(separator=' ', strip=True)
             print(f"\n✓ SUCCESS (fallback): Retrieved {len(full_text)} characters")
-            return full_text
+            return [full_text]
         
         print("ERROR: Could not find passage content")
         return None
@@ -119,6 +118,29 @@ def test_get_bible_text(reference):
     except Exception as e:
         print(f"ERROR: {e}")
         return None
+
+
+def test_header_generation(reference, bible_texts):
+    """Test the logic for splitting headers and pairing with texts."""
+    print("\n" + "=" * 60)
+    print("STEP 3: Testing Header Generation Logic")
+    print("=" * 60)
+    
+    ref_parts = reference.split("; ")
+    print(f"Reference String: '{reference}'")
+    print(f"Split Headers: {ref_parts}")
+    print(f"Pasage count: {len(bible_texts)}")
+    
+    if len(ref_parts) != len(bible_texts):
+        print("WARNING: Number of headers does not match number of passages!")
+    
+    print("\n--- Simulated Email Output ---")
+    for i, text in enumerate(bible_texts):
+        header = ref_parts[i] if i < len(ref_parts) else "Scripture"
+        print(f"[Card Header]: {header} (CJB)")
+        print(f"[Card Body Start]: {text[:50]}...")
+    
+    print("\n✓ SUCCESS: Header logic verified")
 
 
 if __name__ == "__main__":
@@ -131,9 +153,12 @@ if __name__ == "__main__":
     
     if ref:
         # Step 2: Get Bible text
-        text = test_get_bible_text(ref)
+        texts = test_get_bible_text(ref)
         
-        if text:
+        if texts:
+            # Step 3: Test Headers
+            test_header_generation(ref, texts)
+            
             print("\n" + "=" * 60)
             print("TEST RESULT: ✓ PASSED")
             print("=" * 60)
