@@ -275,7 +275,7 @@ def generate_devotional(reference, bible_text):
     **TASK:**
     Create a vivid, convicting, yet encouraging devotional for this passage.
     1. Do not just restate the passage; aggregate themes to highlight key insights.
-    2. Connect historical context to 21st century living (2025).
+    2. Connect historical context to 21st century living (2026).
     3. Build connections to other Bible passages.
     4. Bring deeper revelation of who God is.
     
