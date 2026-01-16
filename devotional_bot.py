@@ -19,7 +19,7 @@ from google import genai
 from google.genai import types
 
 # --- CONFIGURATION ---
-MODEL_NAME = "gemini-2.0-flash-exp"
+MODEL_NAME = "gemini-3-flash-preview"
 
 # Permissive Safety Settings (Critical for Bible content)
 SAFETY_SETTINGS = [
