@@ -2,6 +2,6 @@ selenium
 webdriver-manager
 requests
 beautifulsoup4
-google-generativeai
+google-genai
 markdown
 certifi
