@@ -15,19 +15,31 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
-import google.generativeai as genai
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
+from google import genai
+from google.genai import types
 
 # --- CONFIGURATION ---
-MODEL_NAME = "gemini-3-flash-preview"
+MODEL_NAME = "gemini-2.0-flash-exp"
 
 # Permissive Safety Settings (Critical for Bible content)
-SAFETY_SETTINGS = {
-    HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-    HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-}
+SAFETY_SETTINGS = [
+    types.SafetySetting(
+        category="HARM_CATEGORY_HATE_SPEECH",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_HARASSMENT",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold="BLOCK_NONE",
+    ),
+    types.SafetySetting(
+        category="HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold="BLOCK_NONE",
+    ),
+]
 
 SYSTEM_IDENTITY = """
 ## **Role & Core Identity**
@@ -265,7 +277,6 @@ def generate_devotional(reference, bible_text):
     print(f"\n--- Step 3a: Generating AI Devotional ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
     if not api_key: return None
-    genai.configure(api_key=api_key)
     
     user_prompt = f"""
     Here is the Bible passage for today.
@@ -283,8 +294,15 @@ def generate_devotional(reference, bible_text):
     """
 
     try:
-        model = genai.GenerativeModel(model_name=MODEL_NAME, system_instruction=SYSTEM_IDENTITY)
-        response = model.generate_content(user_prompt, safety_settings=SAFETY_SETTINGS)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_IDENTITY,
+                safety_settings=SAFETY_SETTINGS,
+            )
+        )
         return response.text
     except Exception as e:
         print(f"Error in Devotional Generation: {e}")
@@ -295,7 +313,6 @@ def generate_quotes(reference, bible_text):
     print(f"\n--- Step 3b: Generating Contextual Prayer Quotes ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
     if not api_key: return None
-    genai.configure(api_key=api_key)
     
     user_prompt = f"""
     Here is the Bible passage for today: {reference}
@@ -314,8 +331,15 @@ def generate_quotes(reference, bible_text):
     """
 
     try:
-        model = genai.GenerativeModel(model_name=MODEL_NAME, system_instruction=SYSTEM_IDENTITY)
-        response = model.generate_content(user_prompt, safety_settings=SAFETY_SETTINGS)
+        client = genai.Client(api_key=api_key)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=SYSTEM_IDENTITY,
+                safety_settings=SAFETY_SETTINGS,
+            )
+        )
         return response.text
     except Exception as e:
         print(f"Error in Quote Generation: {e}")
