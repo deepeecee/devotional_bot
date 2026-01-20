@@ -276,7 +276,9 @@ def get_biblegateway_devotional(url, name):
 def generate_devotional(reference, bible_text):
     print(f"\n--- Step 3a: Generating AI Devotional ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
-    if not api_key: return None
+    if not api_key:
+        print("Error: GOOGLE_API_KEY environment variable is not set.")
+        return None
     
     user_prompt = f"""
     Here is the Bible passage for today.
@@ -312,7 +314,9 @@ def generate_devotional(reference, bible_text):
 def generate_quotes(reference, bible_text):
     print(f"\n--- Step 3b: Generating Contextual Prayer Quotes ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
-    if not api_key: return None
+    if not api_key:
+        print("Error: GOOGLE_API_KEY environment variable is not set.")
+        return None
     
     user_prompt = f"""
     Here is the Bible passage for today: {reference}
