@@ -1,4 +1,5 @@
 import os
+import time
 import smtplib
 import ssl
 import urllib.parse
@@ -295,20 +296,30 @@ def generate_devotional(reference, bible_text):
     Based on this devotional, highlight 3 important practices the reader should implement today.
     """
 
-    try:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_IDENTITY,
-                safety_settings=SAFETY_SETTINGS,
+    client = genai.Client(api_key=api_key)
+    max_retries = 3
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Attempt {attempt}/{max_retries}...")
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_IDENTITY,
+                    safety_settings=SAFETY_SETTINGS,
+                )
             )
-        )
-        return response.text
-    except Exception as e:
-        print(f"Error in Devotional Generation: {e}")
-        return None
+            print("Success! Devotional generated.")
+            return response.text
+        except Exception as e:
+            print(f"Error in Devotional Generation (attempt {attempt}): {e}")
+            if attempt < max_retries:
+                print("Waiting 60 seconds before retrying...")
+                time.sleep(60)
+            else:
+                print("All retries exhausted.")
+                return None
 
 # --- STEP 3b: Generate Contextual Quotes ---
 def generate_quotes(reference, bible_text):
@@ -334,20 +345,30 @@ def generate_quotes(reference, bible_text):
     *   **Context & Connection:** [Why this quote matters for this specific passage]
     """
 
-    try:
-        client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_IDENTITY,
-                safety_settings=SAFETY_SETTINGS,
+    client = genai.Client(api_key=api_key)
+    max_retries = 3
+    
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Attempt {attempt}/{max_retries}...")
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=user_prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_IDENTITY,
+                    safety_settings=SAFETY_SETTINGS,
+                )
             )
-        )
-        return response.text
-    except Exception as e:
-        print(f"Error in Quote Generation: {e}")
-        return None
+            print("Success! Quotes generated.")
+            return response.text
+        except Exception as e:
+            print(f"Error in Quote Generation (attempt {attempt}): {e}")
+            if attempt < max_retries:
+                print("Waiting 60 seconds before retrying...")
+                time.sleep(60)
+            else:
+                print("All retries exhausted.")
+                return None
 
 # --- STEP 4: Send Email (DESIGN UPGRADE) ---
 def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_strong_html):
