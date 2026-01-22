@@ -609,15 +609,50 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
     msg["To"] = receiver_email
     msg.attach(MIMEText(html_body, "html"))
 
-    try:
-        context = ssl.create_default_context(cafile=certifi.where())
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls(context=context)
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, msg.as_string())
-        print("Success! Email sent successfully.")
-    except Exception as e:
-        print(f"Error sending email: {e}")
+    max_retries = 3
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Email attempt {attempt}/{max_retries}...")
+            context = ssl.create_default_context(cafile=certifi.where())
+            
+            # Use SMTP_SSL on port 465 (more reliable than STARTTLS on 587)
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context, timeout=30) as server:
+                server.login(sender_email, password)
+                server.sendmail(sender_email, receiver_email, msg.as_string())
+            
+            print("Success! Email sent successfully.")
+            return  # Exit on success
+            
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"Authentication failed: {e}")
+            print("Hint: Ensure EMAIL_PASSWORD is an App Password, not your regular password.")
+            return  # Don't retry auth errors
+            
+        except smtplib.SMTPConnectError as e:
+            print(f"Connection error (attempt {attempt}): {e}")
+            
+        except smtplib.SMTPRecipientsRefused as e:
+            print(f"Recipient refused: {e}")
+            return  # Don't retry recipient errors
+            
+        except smtplib.SMTPException as e:
+            print(f"SMTP error (attempt {attempt}): {e}")
+            
+        except ssl.SSLError as e:
+            print(f"SSL error (attempt {attempt}): {e}")
+            
+        except TimeoutError as e:
+            print(f"Timeout error (attempt {attempt}): {e}")
+            
+        except Exception as e:
+            print(f"Unexpected error (attempt {attempt}): {type(e).__name__}: {e}")
+        
+        # Wait before retrying (except on last attempt)
+        if attempt < max_retries:
+            print("Waiting 10 seconds before retrying...")
+            time.sleep(10)
+    
+    print("All email attempts failed.")
 
 # --- Main Execution ---
 if __name__ == "__main__":
