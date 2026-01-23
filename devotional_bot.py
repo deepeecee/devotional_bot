@@ -365,7 +365,7 @@ def generate_quotes(reference, bible_text):
         return None, None
     
     # Get exclusion list from database
-    exclusion_list = quotes_db.format_exclusion_list(max_quotes=100)
+    exclusion_list = quotes_db.format_exclusion_list(max_quotes=300)
     quote_count = quotes_db.get_quote_count()
     print(f"Database contains {quote_count} previously used quotes.")
     
