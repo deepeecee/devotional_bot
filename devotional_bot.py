@@ -18,6 +18,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from google import genai
 from google.genai import types
+import re
+import quotes_db
 
 # --- CONFIGURATION ---
 MODEL_NAME = "gemini-3-flash-preview"
@@ -322,12 +324,62 @@ def generate_devotional(reference, bible_text):
                 return None
 
 # --- STEP 3b: Generate Contextual Quotes ---
+def parse_quotes_from_response(response_text):
+    """
+    Parse quotes from the AI response text.
+    
+    Returns:
+        List of dicts: [{'quote': '...', 'author': '...'}, ...]
+    """
+    quotes = []
+    
+    # Pattern to match **Quote:** followed by the quote text
+    quote_pattern = r"\*\*Quote:\*\*\s*['\"]?([^'\"*]+)['\"]?"
+    author_pattern = r"\*\*Author:\*\*\s*([^*\n]+)"
+    
+    # Find all quote blocks
+    quote_matches = re.findall(quote_pattern, response_text)
+    author_matches = re.findall(author_pattern, response_text)
+    
+    for i, quote in enumerate(quote_matches):
+        author = author_matches[i].strip() if i < len(author_matches) else "Unknown"
+        quotes.append({
+            'quote': quote.strip(),
+            'author': author
+        })
+    
+    return quotes
+
+
 def generate_quotes(reference, bible_text):
+    """
+    Generate contextual prayer quotes, excluding previously used ones.
+    
+    Returns:
+        tuple: (raw_response_text, parsed_quotes_list) or (None, None) on failure
+    """
     print(f"\n--- Step 3b: Generating Contextual Prayer Quotes ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
     if not api_key:
         print("Error: GOOGLE_API_KEY environment variable is not set.")
-        return None
+        return None, None
+    
+    # Get exclusion list from database
+    exclusion_list = quotes_db.format_exclusion_list(max_quotes=100)
+    quote_count = quotes_db.get_quote_count()
+    print(f"Database contains {quote_count} previously used quotes.")
+    
+    # Build exclusion instruction if we have history
+    exclusion_instruction = ""
+    if exclusion_list:
+        exclusion_instruction = f"""
+    
+    **CRITICAL REQUIREMENT - DO NOT USE THESE QUOTES:**
+    The following quotes have been used in previous emails. You MUST select completely different quotes:
+{exclusion_list}
+
+    Generate 3 NEW, UNIQUE quotes that are NOT in the list above.
+    """
     
     user_prompt = f"""
     Here is the Bible passage for today: {reference}
@@ -338,8 +390,8 @@ def generate_quotes(reference, bible_text):
     1. **Analyze the themes:** Identify core spiritual themes.
     2. **Select Quotes:** Find quotes from great evangelists/missionaries.
     3. **Explain Connection:** Explicitly explain why it connects to this scripture.
-    
-    Format:
+    {exclusion_instruction}
+    Format (use this EXACT format for each quote):
     *   **Quote:** [The Quote]
     *   **Author:** [Name]
     *   **Context & Connection:** [Why this quote matters for this specific passage]
@@ -360,7 +412,12 @@ def generate_quotes(reference, bible_text):
                 )
             )
             print("Success! Quotes generated.")
-            return response.text
+            
+            # Parse quotes from response
+            parsed_quotes = parse_quotes_from_response(response.text)
+            print(f"Parsed {len(parsed_quotes)} quotes from response.")
+            
+            return response.text, parsed_quotes
         except Exception as e:
             print(f"Error in Quote Generation (attempt {attempt}): {e}")
             if attempt < max_retries:
@@ -368,7 +425,7 @@ def generate_quotes(reference, bible_text):
                 time.sleep(60)
             else:
                 print("All retries exhausted.")
-                return None
+                return None, None
 
 # --- STEP 4: Send Email (DESIGN UPGRADE) ---
 def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_strong_html):
@@ -677,9 +734,15 @@ if __name__ == "__main__":
             # 3a. Generate AI Devotional
             devotional_content = generate_devotional(ref, combined_text)
             
-            # 3b. Generate Quotes
-            quotes_content = generate_quotes(ref, combined_text)
+            # 3b. Generate Quotes (now returns tuple)
+            quotes_content, parsed_quotes = generate_quotes(ref, combined_text)
             
             if devotional_content and quotes_content:
                 # 4. Send Email (pass the list for separate headers)
                 send_email(ref, bible_texts, devotional_content, quotes_content, tozer_content, standing_strong_content)
+                
+                # 5. Store quotes in database after successful email
+                if parsed_quotes:
+                    added = quotes_db.add_quotes(parsed_quotes)
+                    print(f"\n--- Step 5: Stored {added} new quotes in database ---")
+                    print(f"Total quotes in database: {quotes_db.get_quote_count()}")

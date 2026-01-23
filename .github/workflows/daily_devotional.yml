@@ -39,3 +39,14 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
         run: python devotional_bot.py
+
+      - name: Commit quote history
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add quotes.db
+          # Only commit if there are changes
+          git diff --staged --quiet || git commit -m "Update quote history [skip ci]"
+          git push
+
+
