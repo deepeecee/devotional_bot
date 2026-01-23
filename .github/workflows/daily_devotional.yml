@@ -12,6 +12,9 @@ on:
   # Allows you to run it manually from the Actions tab for testing
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   run-devotional:
     runs-on: ubuntu-latest
