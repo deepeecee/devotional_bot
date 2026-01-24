@@ -27,7 +27,7 @@ load_dotenv()
 
 # --- CONFIGURATION ---
 MODEL_NAME = "gemini-3-flash-preview"
-FALLBACK_MODEL_NAME = "gemini-2.5-flash-lite-preview-09-2025"
+FALLBACK_MODEL_NAME = "gemini-2.5-flash-preview-09-2025"
 
 # Permissive Safety Settings (Critical for Bible content)
 SAFETY_SETTINGS = [
