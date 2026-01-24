@@ -776,8 +776,8 @@ if __name__ == "__main__":
             # 4. Send Email (pass results even if None)
             send_email(ref, bible_texts, devotional_content, quotes_content, tozer_content, standing_strong_content)
                 
-                # 5. Store quotes in database after successful email
-                if parsed_quotes:
-                    added = quotes_db.add_quotes(parsed_quotes)
-                    print(f"\n--- Step 5: Stored {added} new quotes in database ---")
-                    print(f"Total quotes in database: {quotes_db.get_quote_count()}")
+            # 5. Store quotes in database after successful email
+            if parsed_quotes:
+                added = quotes_db.add_quotes(parsed_quotes)
+                print(f"\n--- Step 5: Stored {added} new quotes in database ---")
+                print(f"Total quotes in database: {quotes_db.get_quote_count()}")
