@@ -312,6 +312,12 @@ def generate_devotional(reference, bible_text):
                     safety_settings=SAFETY_SETTINGS,
                 )
             )
+            
+            if not response.text:
+                print(f"Warning: Generated devotional text is empty (attempt {attempt}).")
+                # Raise exception to trigger retry logic
+                raise ValueError("Empty response from AI model")
+                
             print("Success! Devotional generated.")
             return response.text
         except Exception as e:
@@ -365,7 +371,7 @@ def generate_quotes(reference, bible_text):
         return None, None
     
     # Get exclusion list from database
-    exclusion_list = quotes_db.format_exclusion_list(max_quotes=300)
+    exclusion_list = quotes_db.format_exclusion_list(max_quotes=360)
     quote_count = quotes_db.get_quote_count()
     print(f"Database contains {quote_count} previously used quotes.")
     
@@ -411,6 +417,11 @@ def generate_quotes(reference, bible_text):
                     safety_settings=SAFETY_SETTINGS,
                 )
             )
+            
+            if not response.text:
+                print(f"Warning: Generated quotes text is empty (attempt {attempt}).")
+                raise ValueError("Empty response from AI model")
+
             print("Success! Quotes generated.")
             
             # Parse quotes from response
@@ -439,9 +450,9 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
         print("Error: Missing email environment variables.")
         return
 
-    # Convert Markdown to HTML
-    devotional_html = markdown.markdown(devotional)
-    quotes_html = markdown.markdown(quotes)
+    # Convert Markdown to HTML (Handling None safely)
+    devotional_html = markdown.markdown(devotional) if devotional else None
+    quotes_html = markdown.markdown(quotes) if quotes else None
     
     # Prepare Scripture HTML (Handle multiple passages)
     scripture_section = ""
@@ -494,7 +505,29 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
         </div>
         """
 
-    # --- THE HTML TEMPLATE ---
+
+    devotional_section = ""
+    if devotional_html:
+        devotional_section = f"""
+            <div class="card">
+                <div class="card-header">Disciple-Leader Insight</div>
+                <div class="card-body devotional-text">
+                    {devotional_html}
+                </div>
+            </div>
+        """
+        
+    quotes_section = ""
+    if quotes_html:
+        quotes_section = f"""
+            <div class="card">
+                <div class="card-header">Contextual Prayer Quotes</div>
+                <div class="card-body">
+                    {quotes_html}
+                </div>
+            </div>
+        """
+
     html_body = f"""
     <!DOCTYPE html>
     <html>
@@ -631,20 +664,10 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
             {scripture_section}
 
             <!-- Main Devotional Card -->
-            <div class="card">
-                <div class="card-header">Disciple-Leader Insight</div>
-                <div class="card-body devotional-text">
-                    {devotional_html}
-                </div>
-            </div>
+            {devotional_section}
 
             <!-- Quotes Card -->
-            <div class="card">
-                <div class="card-header">Contextual Prayer Quotes</div>
-                <div class="card-body">
-                    {quotes_html}
-                </div>
-            </div>
+            {quotes_section}
 
             <!-- Extra Devotionals -->
             {tozer_section}
@@ -737,9 +760,21 @@ if __name__ == "__main__":
             # 3b. Generate Quotes (now returns tuple)
             quotes_content, parsed_quotes = generate_quotes(ref, combined_text)
             
+            print(f"DEBUG: devotional_content type: {type(devotional_content)}")
+            if devotional_content:
+                print(f"DEBUG: devotional_content length: {len(devotional_content)}")
+            
+            print(f"DEBUG: quotes_content type: {type(quotes_content)}")
+            if quotes_content:
+                print(f"DEBUG: quotes_content length: {len(quotes_content)}")
+            
             if devotional_content and quotes_content:
-                # 4. Send Email (pass the list for separate headers)
-                send_email(ref, bible_texts, devotional_content, quotes_content, tozer_content, standing_strong_content)
+                print("All content generated successfully.")
+            else:
+                print("Warning: Some content generation failed. Sending partial email.")
+                
+            # 4. Send Email (pass results even if None)
+            send_email(ref, bible_texts, devotional_content, quotes_content, tozer_content, standing_strong_content)
                 
                 # 5. Store quotes in database after successful email
                 if parsed_quotes:
