@@ -191,14 +191,11 @@ def get_todays_reference():
         driver.quit()
 
 # --- STEP 2: Get the Bible Text (Requests) ---
-# --- STEP 2: Get the Bible Text (Requests) ---
 def get_bible_text(reference):
     """Fetch Bible text from BibleGateway for one or more references.
     
-    The reference can include multiple passages separated by semicolons,
-    e.g., 'Genesis 15-16; Matthew 6:1-15'
-    
-    Returns a LIST of strings, where each string is a passage text.
+    Returns a LIST of HTML strings, where each string is a passage.
+    Preserves formatting (paragraphs, etc.) while removing unwanted elements.
     """
     print(f"\n--- Step 2: Fetching Text for {reference} ---")
     encoded_ref = urllib.parse.quote(reference)
@@ -211,30 +208,46 @@ def get_bible_text(reference):
         soup = BeautifulSoup(response.content, 'html.parser')
         
         # Find passage text divs - look for 'result-text-style-normal' which contains actual Scripture
-        # This is more specific than 'version-CJB' which also includes navigation elements
         passage_divs = soup.find_all('div', class_='result-text-style-normal')
         
         if passage_divs:
             all_passages = []
             for div in passage_divs:
-                # Remove footnotes and chapter links for cleaner text
-                for element in div.find_all(class_=['footnotes', 'full-chap-link']):
+                # --- CLEANUP LOGIC ---
+                # Remove unwanted elements to ensure clean reading flow
+                # 1. Footnotes and Cross-references
+                for element in div.find_all(class_=['footnotes', 'crossrefs', 'full-chap-link']):
                     element.decompose()
                 
-                passage_text = div.get_text(separator=' ', strip=True)
-                if passage_text:
-                    all_passages.append(passage_text)
+                # 2. Superscript markers (cross-ref markers, footnote markers)
+                for element in div.find_all('sup', class_=['crossreference', 'footnote']):
+                    element.decompose()
+                
+                # 3. Verse numbers and Chapter numbers (for clean reading as requested)
+                for element in div.find_all(['sup', 'span'], class_=['versenum', 'chapternum']):
+                    element.decompose()
+
+                # Extract inner HTML to preserve <p> tags, etc.
+                # decode_contents() returns the string representation of children
+                passage_html = div.decode_contents().strip()
+                
+                if passage_html:
+                    all_passages.append(passage_html)
             
             if all_passages:
-                print(f"Success! Retrieved {len(all_passages)} passage(s).")
+                print(f"Success! Retrieved {len(all_passages)} passage(s) with formatting.")
                 return all_passages
         
         # Fallback to original method if result-text-style-normal divs not found
         passage_content = soup.find(class_="passage-text")
         if passage_content:
-            full_text = passage_content.get_text(separator=' ', strip=True)
-            print(f"Success (fallback)! Retrieved {len(full_text)} characters of text.")
-            return [full_text]
+            # Cleanup for fallback as well
+            for element in passage_content.find_all(class_=['footnotes', 'crossrefs', 'versenum', 'chapternum']):
+                 element.decompose()
+            
+            full_html = passage_content.decode_contents().strip()
+            print(f"Success (fallback)! Retrieved text with formatting.")
+            return [full_html]
         
         print("Error: Could not find passage content on Bible Gateway.")
         return None
@@ -751,8 +764,10 @@ if __name__ == "__main__":
         standing_strong_content = get_biblegateway_devotional(standing_strong_url, "Standing Strong")
         
         if bible_texts:
-            # Prepare combined text for AI Generation (needs context of all passages)
-            combined_text = "\n\n".join(bible_texts)
+            # Prepare plain text for AI Generation (needs content without HTML tags)
+            # We join the HTML passages, then strip tags using BeautifulSoup
+            combined_html = "".join(bible_texts)
+            combined_text = BeautifulSoup(combined_html, "html.parser").get_text(separator="\n\n")
             
             # 3a. Generate AI Devotional
             devotional_content = generate_devotional(ref, combined_text)
