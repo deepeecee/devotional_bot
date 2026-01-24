@@ -20,9 +20,14 @@ from google import genai
 from google.genai import types
 import re
 import quotes_db
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (if running locally)
+load_dotenv()
 
 # --- CONFIGURATION ---
 MODEL_NAME = "gemini-3-flash-preview"
+FALLBACK_MODEL_NAME = "gemini-2.5-flash-lite-preview-09-2025"
 
 # Permissive Safety Settings (Critical for Bible content)
 SAFETY_SETTINGS = [
@@ -314,33 +319,47 @@ def generate_devotional(reference, bible_text):
     client = genai.Client(api_key=api_key)
     max_retries = 3
     
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"Attempt {attempt}/{max_retries}...")
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_IDENTITY,
-                    safety_settings=SAFETY_SETTINGS,
+    # helper for attempt loop
+    def attempt_generation_with_model(model_to_use, attempt_label):
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"{attempt_label} Attempt {attempt}/{max_retries} with {model_to_use}...")
+                response = client.models.generate_content(
+                    model=model_to_use,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_IDENTITY,
+                        safety_settings=SAFETY_SETTINGS,
+                    )
                 )
-            )
-            
-            if not response.text:
-                print(f"Warning: Generated devotional text is empty (attempt {attempt}).")
-                # Raise exception to trigger retry logic
-                raise ValueError("Empty response from AI model")
                 
-            print("Success! Devotional generated.")
-            return response.text
-        except Exception as e:
-            print(f"Error in Devotional Generation (attempt {attempt}): {e}")
-            if attempt < max_retries:
-                print("Waiting 60 seconds before retrying...")
-                time.sleep(60)
-            else:
-                print("All retries exhausted.")
-                return None
+                if not response.text:
+                    print(f"Warning: Generated devotional text is empty (attempt {attempt}).")
+                    raise ValueError("Empty response from AI model")
+                    
+                print("Success! Devotional generated.")
+                return response.text
+            except Exception as e:
+                print(f"Error in Devotional Generation (attempt {attempt}): {e}")
+                if attempt < max_retries:
+                    print("Waiting 60 seconds before retrying...")
+                    time.sleep(60)
+                else:
+                    print("All retries exhausted for this model.")
+        return None
+
+    # 1. Try Primary Model
+    result = attempt_generation_with_model(MODEL_NAME, "Primary")
+    if result:
+        return result
+        
+    # 2. Try Fallback Model
+    print(f"\n--- Switching to Fallback Model: {FALLBACK_MODEL_NAME} ---")
+    result = attempt_generation_with_model(FALLBACK_MODEL_NAME, "Fallback")
+    if result:
+        return result
+        
+    return None
 
 # --- STEP 3b: Generate Contextual Quotes ---
 def parse_quotes_from_response(response_text):
@@ -419,37 +438,51 @@ def generate_quotes(reference, bible_text):
     client = genai.Client(api_key=api_key)
     max_retries = 3
     
-    for attempt in range(1, max_retries + 1):
-        try:
-            print(f"Attempt {attempt}/{max_retries}...")
-            response = client.models.generate_content(
-                model=MODEL_NAME,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_IDENTITY,
-                    safety_settings=SAFETY_SETTINGS,
+    def attempt_quote_generation(model_to_use, attempt_label):
+        for attempt in range(1, max_retries + 1):
+            try:
+                print(f"{attempt_label} Attempt {attempt}/{max_retries} with {model_to_use}...")
+                response = client.models.generate_content(
+                    model=model_to_use,
+                    contents=user_prompt,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_IDENTITY,
+                        safety_settings=SAFETY_SETTINGS,
+                    )
                 )
-            )
-            
-            if not response.text:
-                print(f"Warning: Generated quotes text is empty (attempt {attempt}).")
-                raise ValueError("Empty response from AI model")
+                
+                if not response.text:
+                    print(f"Warning: Generated quotes text is empty (attempt {attempt}).")
+                    raise ValueError("Empty response from AI model")
 
-            print("Success! Quotes generated.")
-            
-            # Parse quotes from response
-            parsed_quotes = parse_quotes_from_response(response.text)
-            print(f"Parsed {len(parsed_quotes)} quotes from response.")
-            
-            return response.text, parsed_quotes
-        except Exception as e:
-            print(f"Error in Quote Generation (attempt {attempt}): {e}")
-            if attempt < max_retries:
-                print("Waiting 60 seconds before retrying...")
-                time.sleep(60)
-            else:
-                print("All retries exhausted.")
-                return None, None
+                print("Success! Quotes generated.")
+                
+                # Parse quotes from response
+                parsed_quotes = parse_quotes_from_response(response.text)
+                print(f"Parsed {len(parsed_quotes)} quotes from response.")
+                
+                return response.text, parsed_quotes
+            except Exception as e:
+                print(f"Error in Quote Generation (attempt {attempt}): {e}")
+                if attempt < max_retries:
+                    print("Waiting 60 seconds before retrying...")
+                    time.sleep(60)
+                else:
+                    print("All retries exhausted for this model.")
+        return None
+
+    # 1. Try Primary Model
+    result = attempt_quote_generation(MODEL_NAME, "Primary")
+    if result:
+        return result
+        
+    # 2. Try Fallback Model
+    print(f"\n--- Switching to Fallback Model: {FALLBACK_MODEL_NAME} ---")
+    result = attempt_quote_generation(FALLBACK_MODEL_NAME, "Fallback")
+    if result:
+        return result
+        
+    return None, None
 
 # --- STEP 4: Send Email (DESIGN UPGRADE) ---
 def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_strong_html):
