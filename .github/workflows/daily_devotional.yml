@@ -2,12 +2,12 @@ name: Daily Devotional Bot
 
 on:
   schedule:
-    # Runs at 6:30 AM daily.
+    # Runs at 1:30 AM PST daily.
     # NOTE: GitHub uses UTC time. You must convert your local time to UTC.
     # Example: If you are in EST (UTC-5), 6:30 AM is 11:30 UTC.
     # If you are in PST (UTC-8), 6:30 AM is 14:30 UTC.
     # The format is: 'minute hour day month day_of_week'
-    - cron: '30 12 * * *'  # This is 6:30 AM PST. Adjust accordingly.
+    - cron: '30 9 * * *'  # 9:30 UTC (1:30 AM PST)
   
   # Allows you to run it manually from the Actions tab for testing
   workflow_dispatch:
