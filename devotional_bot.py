@@ -204,7 +204,7 @@ def get_bible_text(reference):
     """
     print(f"\n--- Step 2: Fetching Text for {reference} ---")
     encoded_ref = urllib.parse.quote(reference)
-    url = f"https://www.biblegateway.com/passage/?search={encoded_ref}&version=CJB"
+    url = f"https://www.biblegateway.com/passage/?search={encoded_ref}&version=ESV"
     headers = {"User-Agent": "Mozilla/5.0"}
     
     try:
