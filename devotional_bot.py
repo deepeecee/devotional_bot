@@ -699,12 +699,6 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
     </head>
     <body>
         <div class="container">
-            
-            <!-- Header -->
-            <div class="email-header">
-                <h1>Daily Reading</h1>
-                <p>{reference}</p>
-            </div>
 
             <!-- Scripture Section -->
             {scripture_section}
