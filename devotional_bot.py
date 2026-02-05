@@ -304,7 +304,7 @@ def generate_devotional(reference, bible_text):
     user_prompt = f"""
     Here is the Bible passage for today.
     Reference: {reference}
-    Text (CJB Version): {bible_text}
+    Text (ESV Version): {bible_text}
 
     **TASK:**
     Create a vivid, convicting, yet encouraging devotional for this passage.
@@ -508,7 +508,7 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
             header = ref_parts[i] if i < len(ref_parts) else "Scripture"
             scripture_section += f"""
             <div class="card">
-                <div class="card-header">{header} (CJB)</div>
+                <div class="card-header">{header} (ESV)</div>
                 <div class="card-body scripture-text">
                     {text}
                 </div>
@@ -518,7 +518,7 @@ def send_email(reference, bible_texts, devotional, quotes, tozer_html, standing_
         # Fallback for legacy string input
         scripture_section = f"""
         <div class="card">
-            <div class="card-header">Scripture (CJB)</div>
+            <div class="card-header">Scripture (ESV)</div>
             <div class="card-body scripture-text">
                 {bible_texts}
             </div>
