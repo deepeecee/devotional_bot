@@ -524,16 +524,16 @@ def generate_v2_content(reference, bible_text):
     **MODULE 3: THE SOURCE CODE**
     - (This is the full text, we will render it programmatically, no need to generate it).
 
-    **MODULE 4: THE CASE STUDY**
-    - `subject`: Name of the historical/contemporary figure (e.g., Wang Ming-dao).
-    - `narrative`: Brief story of their life/situation relevant to the theme.
-    - `pivot`: The specific moment they applied the principle.
+    **MODULE 4: THE CASE STUDY (The Application)**
+    - `subject`: Name of the historical/contemporary figure.
+    - `narrative`: Detailed story (2-3 paragraphs) of their life/situation relevant to the theme. Go deep here.
+    - `connection`: Explicitly explain HOW this story connects to the passage. This is "The Bridge".
     - `takeaway`: One sentence connecting it to the user's leadership context.
 
     **MODULE 5: THE INTEGRATION MATRIX (Soma/Soul/Spirit)**
-    - `soma`: `action` (physical act), `verse` (scriptural basis).
-    - `soul`: `pivot` (mental model shift), `verse` (scriptural basis).
-    - `spirit`: `breath_prayer_inhale`, `breath_prayer_exhale`.
+    - `soma`: `action` (physical act), `verse`, `explanation` (The "Strategic Why" & "How").
+    - `soul`: `pivot` (mental model shift), `verse`, `explanation` (The "Strategic Why" & "How").
+    - `spirit`: `breath_prayer_inhale`, `breath_prayer_exhale`, `explanation` (The "Strategic Why" & "How").
 
     **MODULE 6: CONTEXTUAL PRAYER QUOTES**
     - Select 3 inspiring quotes from great evangelists/missionaries.
@@ -557,13 +557,13 @@ def generate_v2_content(reference, bible_text):
         "case_study": {{
             "subject": "...",
             "narrative": "...",
-            "pivot": "...",
+            "connection": "...",
             "takeaway": "..."
         }},
         "integration": {{
-            "soma": {{ "action": "...", "verse": "..." }},
-            "soul": {{ "pivot": "...", "verse": "..." }},
-            "spirit": {{ "breath_prayer_inhale": "...", "breath_prayer_exhale": "..." }}
+            "soma": {{ "action": "...", "verse": "...", "explanation": "..." }},
+            "soul": {{ "pivot": "...", "verse": "...", "explanation": "..." }},
+            "spirit": {{ "breath_prayer_inhale": "...", "breath_prayer_exhale": "...", "explanation": "..." }}
         }},
         "prayer_quotes": [
             {{ "quote": "...", "author": "...", "context": "..." }},
@@ -634,9 +634,9 @@ def generate_v2_content(reference, bible_text):
         
     return None
 
-# --- STEP 4: Send V2 Email (Modular HTML) ---
+# --- STEP 4: Send V2 Email (Markdown -> HTML) ---
 def send_v2_email(reference, bible_texts, v2_data):
-    print(f"\n--- Step 4: Sending V2 Email ---")
+    print(f"\n--- Step 4: Sending V2 Email (Markdown) ---")
     
     sender_email = os.getenv("EMAIL_SENDER")
     password = os.getenv("EMAIL_PASSWORD")
@@ -646,201 +646,121 @@ def send_v2_email(reference, bible_texts, v2_data):
         print("Error: Missing email environment variables.")
         return
 
-    # --- HTML COMPONENTS ---
-    HEADER_COLOR = "#2c3e50"
-    
-    # 1. Header Module
+    # --- Markdown Construction ---
     header_data = v2_data.get("header", {})
-    header_html = f"""
-    <div class="email-header">
-        <h1>{header_data.get('big_idea', 'Daily Devotional')}</h1>
-        <p style="margin-top: 10px; font-size: 18px; opacity: 0.9;">
-            {header_data.get('subject', reference)}
-        </p>
-        <div style="margin-top: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-            Reading Time: {header_data.get('reading_time', '5 mins')} • Mode: {header_data.get('mode', 'Focus')}
-        </div>
-    </div>
-    """
-
-    # 2. Anchor Module
     anchor_data = v2_data.get("anchor", {})
-    key_verses_html = "".join([f"<p><em>{v}</em></p>" for v in anchor_data.get('key_verses', [])])
-    insight_md = anchor_data.get('insight', '')
-    insight_html = markdown.markdown(insight_md)
-    
-    anchor_section = f"""
-    <div class="card">
-        <div class="card-header">The Anchor</div>
-        <div class="card-body">
-            <blockquote style="border-left: 4px solid {HEADER_COLOR}; margin: 0; padding-left: 20px; color: #444; background-color: #f9f9f9; padding: 15px; border-radius: 4px;">
-                {key_verses_html}
-            </blockquote>
-            <div style="margin-top: 25px; color: #222;">
-                {insight_html}
-            </div>
-        </div>
-    </div>
-    """
+    case_data = v2_data.get("case_study", {})
+    matrix_data = v2_data.get("integration", {})
+    quotes_list = v2_data.get("prayer_quotes", [])
 
-    # 3. Source Code Module
-    # Provide clear separation between readings if list
-    source_content = ""
+    # 1. Header
+    md_content = f"""# {header_data.get('big_idea', 'Daily Devotional')}
+**{header_data.get('subject', reference)}**
+
+*Reading Time: {header_data.get('reading_time', '5 mins')} | Mode: {header_data.get('mode', 'Focus')}*
+
+---
+"""
+
+    # 2. Anchor
+    md_content += f"""## The Anchor
+
+> {anchor_data.get('key_verses')[0] if anchor_data.get('key_verses') else ''}...
+
+{anchor_data.get('insight', '')}
+
+---
+"""
+
+    # 3. Source Code
+    md_content += f"## The Source Code (ESV)\n\n"
     if isinstance(bible_texts, list):
         ref_parts = reference.split("; ")
         for i, text in enumerate(bible_texts):
-            header_text = ref_parts[i] if i < len(ref_parts) else "Scripture"
-            source_content += f"""
-            <h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">{header_text}</h3>
-            {text}
-            """
+            header = ref_parts[i] if i < len(ref_parts) else "Scripture"
+            # Strip existing HTML tags from bible_texts for clean markdown if possible,
+            # but bible_texts contains HTML formatting (<p>, <span class="woj">). 
+            # To keep it simple in Markdown, we might just render the HTML directly or trust the markdown converter to handle mixed HTML.
+            # Python-Markdown supports mixed HTML. We will wrap it in a div or just leave it.
+            md_content += f"### {header}\n\n{text}\n\n"
     else:
-        source_content = bible_texts
+        md_content += f"{bible_texts}\n\n"
+    
+    md_content += "---\n"
 
-    source_section = f"""
-    <div class="card">
-        <div class="card-header">The Source Code (ESV)</div>
-        <div class="card-body scripture-text" style="max-height: 500px; overflow-y: auto;">
-             {source_content}
-        </div>
-    </div>
-    """
+    # 4. Case Study
+    md_content += f"""## Case Study: {case_data.get('subject', 'Historical Example')}
 
-    # 4. Case Study Module
-    case_data = v2_data.get("case_study", {})
-    case_section = f"""
-    <div class="card">
-        <div class="card-header">Case Study: {case_data.get('subject', 'Historical Example')}</div>
-        <div class="card-body">
-            <p><strong>The Context:</strong> {case_data.get('narrative', '')}</p>
-            <p><strong>The Pivot:</strong> {case_data.get('pivot', '')}</p>
-            <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 8px; color: #2c3e50;">
-                <strong>Takeaway:</strong> {case_data.get('takeaway', '')}
-            </div>
-        </div>
-    </div>
-    """
+**The Narrative:**
+{case_data.get('narrative', '')}
 
-    # 5. Integration Matrix Module
-    matrix_data = v2_data.get("integration", {})
+**The Bridge:**
+{case_data.get('connection', '')}
+
+**Takeaway:**
+* {case_data.get('takeaway', '')}
+
+---
+"""
+
+    # 5. Integration Matrix
     soma = matrix_data.get("soma", {})
     soul = matrix_data.get("soul", {})
     spirit = matrix_data.get("spirit", {})
-    
-    matrix_section = f"""
-    <div class="card">
-        <div class="card-header">Integration Matrix</div>
-        <div class="card-body">
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-                <thead>
-                    <tr style="background-color: #f4f4f4; text-align: left;">
-                        <th style="padding: 12px; border-bottom: 2px solid #ddd;">Dimension</th>
-                        <th style="padding: 12px; border-bottom: 2px solid #ddd;">Practice</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee; vertical-align: top;">
-                            <strong>SOMA</strong><br><span style="font-size: 14px; color: #666;">Body</span>
-                        </td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">
-                            <strong>Action:</strong> {soma.get('action', '')}<br>
-                            <em style="font-size: 14px; color: #555;">"{soma.get('verse', '')}"</em>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee; vertical-align: top;">
-                            <strong>SOUL</strong><br><span style="font-size: 14px; color: #666;">Mind/Will</span>
-                        </td>
-                        <td style="padding: 15px; border-bottom: 1px solid #eee;">
-                            <strong>Pivot:</strong> {soul.get('pivot', '')}<br>
-                            <em style="font-size: 14px; color: #555;">"{soul.get('verse', '')}"</em>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 15px; vertical-align: top;">
-                            <strong>SPIRIT</strong><br><span style="font-size: 14px; color: #666;">Inhale/Exhale</span>
-                        </td>
-                        <td style="padding: 15px;">
-                            <strong>Inhale:</strong> {spirit.get('breath_prayer_inhale', '')}<br>
-                            <strong>Exhale:</strong> {spirit.get('breath_prayer_exhale', '')}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    """
 
-    # 6. Contextual Prayer Quotes Module (Section 6)
-    quotes_list = v2_data.get("prayer_quotes", [])
-    quotes_html = ""
+    md_content += f"""## Integration Matrix
+
+### 1. Soma (Body)
+**Action:** {soma.get('action', '')}
+*"{soma.get('verse', '')}"*
+**Why/How:** {soma.get('explanation', '')}
+
+### 2. Soul (Mind)
+**Pivot:** {soul.get('pivot', '')}
+*"{soul.get('verse', '')}"*
+**Why/How:** {soul.get('explanation', '')}
+
+### 3. Spirit (Breath)
+**Inhale:** {spirit.get('breath_prayer_inhale', '')}
+**Exhale:** {spirit.get('breath_prayer_exhale', '')}
+**Why/How:** {spirit.get('explanation', '')}
+
+---
+"""
+
+    # 6. Quotes
+    md_content += "## Contextual Prayer Quotes\n\n"
     for q in quotes_list:
-        quotes_html += f"""
-        <div style="margin-bottom: 20px; padding-left: 15px; border-left: 3px solid #ccc;">
-            <p style="font-style: italic; margin-bottom: 5px;">"{q.get('quote')}"</p>
-            <p style="font-size: 14px; font-weight: bold; margin-bottom: 2px;">— {q.get('author')}</p>
-            <p style="font-size: 12px; color: #666;">Connection: {q.get('context')}</p>
-        </div>
-        """
-    
-    quotes_section = f"""
-    <div class="card">
-        <div class="card-header">Contextual Prayer Quotes</div>
-        <div class="card-body">
-            {quotes_html}
-        </div>
-    </div>
-    """
+        md_content += f"> *\"{q.get('quote')}\"* — **{q.get('author')}**\n> (Context: {q.get('context')})\n\n"
 
-    # --- ASSEMBLE HTML BODY ---
-    html_body = f"""
+
+    # --- HTML Rendering ---
+    # Convert Markdown to HTML
+    # We use 'tables' extension just in case, though we used list format for Matrix above for simplicity in text logic.
+    html_content = markdown.markdown(md_content, extensions=['tables'])
+
+    # Simple Skeleton
+    final_html = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{header_data.get('subject', 'Daily Devotional')}</title>
         <style>
-            @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,700;1,400&display=swap');
-            body {{
-                margin: 0; padding: 0; background-color: #f4f7f6;
-                font-family: 'Archivo', sans-serif; font-size: 18px; line-height: 1.6; color: #222;
-            }}
-            .container {{ max-width: 700px; margin: 40px auto; }}
-            .email-header {{
-                background-color: {HEADER_COLOR}; color: #ffffff; padding: 40px 30px;
-                text-align: center; border-radius: 12px 12px 0 0;
-            }}
-            .email-header h1 {{ margin: 0; font-size: 28px; font-weight: 700; }}
-            .card {{
-                background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-                margin-bottom: 30px; overflow: hidden;
-            }}
-            .card-header {{
-                background-color: {HEADER_COLOR}; color: #ffffff; padding: 12px 30px;
-                font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
-            }}
-            .card-body {{ padding: 30px; }}
-            .scripture-text {{ font-size: 16px; color: #333; }}
-            @media only screen and (max-width: 600px) {{
-                .container {{ margin: 0; width: 100% !important; }}
-                .card, .email-header {{ border-radius: 0; }}
-                .card-body {{ padding: 20px; }}
-            }}
+            body {{ font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }}
+            h1 {{ color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
+            h2 {{ color: #2c3e50; margin-top: 30px; }}
+            h3 {{ color: #444; margin-top: 20px; }}
+            blockquote {{ border-left: 4px solid #ccc; padding-left: 15px; color: #555; font-style: italic; }}
+            hr {{ border: 0; height: 1px; background: #ddd; margin: 40px 0; }}
+            img {{ max-width: 100%; }}
+            /* Scripture text styling */
+            p {{ margin-bottom: 15px; }}
         </style>
     </head>
     <body>
-        <div class="container">
-            {header_html}
-            {anchor_section}
-            {source_section}
-            {case_section}
-            {matrix_section}
-            {quotes_section}
-            <div style="text-align: center; margin: 40px 0; color: #999; font-size: 12px;">
-                Solis Jesu | Coram Deo
-            </div>
+        {html_content}
+        <div style="text-align: center; margin-top: 50px; color: #999; font-size: 12px;">
+            Solis Jesu | Coram Deo
         </div>
     </body>
     </html>
@@ -850,7 +770,7 @@ def send_v2_email(reference, bible_texts, v2_data):
     msg["Subject"] = header_data.get('subject', f"Daily Reading: {reference}")
     msg["From"] = sender_email
     msg["To"] = receiver_email
-    msg.attach(MIMEText(html_body, "html"))
+    msg.attach(MIMEText(final_html, "html"))
 
     # Send Logic (Same as before)
     max_retries = 3
