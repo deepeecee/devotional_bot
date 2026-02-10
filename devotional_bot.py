@@ -796,7 +796,7 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
     </div>
     """
 
-    # 5. Integration Matrix Module (HTML Table)
+    # 5. Integration Matrix Module (List Layout)
     matrix_data = v2_data.get("integration", {})
     soma = matrix_data.get("soma", {})
     soul = matrix_data.get("soul", {})
@@ -806,74 +806,62 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
     <div class="card">
         <div class="card-header">Integration Matrix</div>
         <div class="card-body">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th width="15%">Dimension</th>
-                        <th width="40%">Practice</th>
-                        <th width="45%">Why/How</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>Soma</strong><br><span style="font-size: 12px; color: #666;">Body</span></td>
-                        <td>
-                            <strong>Action:</strong> {soma.get('action', '')}<br><br>
-                            <em>"{soma.get('verse', '')}"</em>
-                        </td>
-                        <td>{soma.get('explanation', '')}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Soul</strong><br><span style="font-size: 12px; color: #666;">Mind</span></td>
-                        <td>
-                            <strong>Pivot:</strong> {soul.get('pivot', '')}<br><br>
-                            <em>"{soul.get('verse', '')}"</em>
-                        </td>
-                        <td>{soul.get('explanation', '')}</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Spirit</strong><br><span style="font-size: 12px; color: #666;">Breath</span></td>
-                        <td>
-                            <strong>Inhale:</strong> {spirit.get('breath_prayer_inhale', '')}<br>
-                            <strong>Exhale:</strong> {spirit.get('breath_prayer_exhale', '')}
-                        </td>
-                        <td>{spirit.get('explanation', '')}</td>
-                    </tr>
-                </tbody>
-            </table>
+            
+            <!-- Soma -->
+            <div style="margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 18px;">1. Soma (Body)</h3>
+                <p><strong>Practice:</strong> {soma.get('action', '')}</p>
+                <p><em>"{soma.get('verse', '')}"</em></p>
+                <p style="background-color: #f8f9fa; padding: 10px; border-left: 3px solid #2c3e50; font-size: 14px; margin-top: 10px;">
+                    <strong>Why/How:</strong> {soma.get('explanation', '')}
+                </p>
+            </div>
+
+            <!-- Soul -->
+            <div style="margin-bottom: 25px; border-bottom: 1px solid #eee; padding-bottom: 15px;">
+                <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 18px;">2. Soul (Mind)</h3>
+                <p><strong>Practice:</strong> {soul.get('pivot', '')}</p>
+                <p><em>"{soul.get('verse', '')}"</em></p>
+                <p style="background-color: #f8f9fa; padding: 10px; border-left: 3px solid #2c3e50; font-size: 14px; margin-top: 10px;">
+                    <strong>Why/How:</strong> {soul.get('explanation', '')}
+                </p>
+            </div>
+
+            <!-- Spirit -->
+            <div>
+                <h3 style="margin: 0 0 10px 0; color: #2c3e50; font-size: 18px;">3. Spirit (Breath)</h3>
+                <p><strong>Inhale:</strong> {spirit.get('breath_prayer_inhale', '')}</p>
+                <p><strong>Exhale:</strong> {spirit.get('breath_prayer_exhale', '')}</p>
+                 <p style="background-color: #f8f9fa; padding: 10px; border-left: 3px solid #2c3e50; font-size: 14px; margin-top: 10px;">
+                    <strong>Why/How:</strong> {spirit.get('explanation', '')}
+                </p>
+            </div>
+
         </div>
     </div>
     """
 
-    # 6. Contextual Prayer Quotes Module (HTML Table)
-    # quotes_list passed as argument
+    # 6. Contextual Prayer Quotes Module (List Layout)
     quotes_rows = ""
     if quotes_list:
         for q in quotes_list:
             quotes_rows += f"""
-            <tr>
-                <td><em>"{q.get('quote')}"</em></td>
-                <td><strong>{q.get('author')}</strong></td>
-                <td>{q.get('context')}</td>
-            </tr>
+            <div style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
+                <blockquote style="border-left: 4px solid #2c3e50; margin: 0; padding-left: 15px; color: #555; font-style: italic; font-size: 16px;">
+                    "{q.get('quote')}"
+                </blockquote>
+                <div style="margin-top: 8px; font-weight: bold; color: #333;">— {q.get('author')}</div>
+                <div style="margin-top: 5px; font-size: 14px; color: #666;">
+                    Context: {q.get('context')}
+                </div>
+            </div>
             """
     
     quotes_section = f"""
     <div class="card">
         <div class="card-header">Contextual Prayer Quotes</div>
         <div class="card-body">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th width="45%">Quote</th>
-                        <th width="20%">Author</th>
-                        <th width="35%">Context & Connection</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {quotes_rows}
-                </tbody>
-            </table>
+            {quotes_rows}
         </div>
     </div>
     """
@@ -908,26 +896,12 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
             }}
             .card-body {{ padding: 30px; }}
             
-            /* Table Styling */
-            .data-table {{
-                width: 100%; border-collapse: collapse; margin-top: 10px;
-            }}
-            .data-table th {{
-                text-align: left; padding: 12px; border-bottom: 2px solid #ddd; background-color: #f8f9fa; font-size: 14px;
-            }}
-            .data-table td {{
-                padding: 15px; border-bottom: 1px solid #eee; vertical-align: top;
-            }}
-            .data-table tr:last-child td {{ border-bottom: none; }}
+            /* Removed Table Styling */
             
             @media only screen and (max-width: 600px) {{
                 .container {{ margin: 0; width: 100% !important; }}
                 .card, .email-header {{ border-radius: 0; }}
                 .card-body {{ padding: 15px; }}
-                .data-table th, .data-table td {{ display: block; width: 100%; }}
-                .data-table th {{ display: none; }} /* Hide headers on mobile */
-                .data-table tr {{ margin-bottom: 20px; display: block; border-bottom: 2px solid #eee; }}
-                .data-table td {{ padding: 10px 0; border: none; }}
             }}
         </style>
     </head>
