@@ -492,6 +492,96 @@ def generate_prayer_quotes(reference, bible_text):
         
     return []
 
+def generate_case_study(reference, bible_text):
+    """
+    Generate a deep-dive Case Study based on the Bible text.
+    Returns:
+        dict: {'subject': '...', 'narrative': '...', 'connection': '...', 'takeaway': '...'} or None
+    """
+    print(f"\n--- Step 3c: Generating Case Study (Decoupled) ---")
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        print("Error: GOOGLE_API_KEY environment variable is not set.")
+        return None
+
+    user_prompt = f"""
+    Here is the Bible passage for today: {reference}
+    Text: {bible_text}
+
+    **OBJECTIVE:**
+    Generate a **Deep Dive Case Study** that brings the spiritual principles of this text to life through a powerful historical or contemporary narrative.
+    
+    **CRITERIA:**
+    1.  **Subject:** Choose a historical figure, missionary, or leader whose life vividly illustrates the core theme of the passage.
+    2.  **Narrative:** Write a compelling 2-3 paragraph story.
+    3.  **Connection (The Bridge):** Explicitly explain HOW this story connects to the provided scripture. This must be rooted in the text.
+    4.  **Takeaway:** A single, punchy sentence for application.
+
+    **OUTPUT FORMAT:**
+    Return ONLY a valid JSON object:
+    {{
+        "subject": "...",
+        "narrative": "...",
+        "connection": "...",
+        "takeaway": "..."
+    }}
+    """
+    
+    client = genai.Client(api_key=api_key)
+    max_retries = 3
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Case Study Attempt {attempt}/{max_retries}...")
+            config = types.GenerateContentConfig(
+                system_instruction=SYSTEM_IDENTITY,
+                safety_settings=SAFETY_SETTINGS,
+                response_mime_type="application/json"
+            )
+            
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=user_prompt,
+                config=config
+            )
+
+            if not response.text:
+                raise ValueError("Empty response")
+            
+            # Clean up
+            clean_text = response.text.strip()
+            if clean_text.startswith("```json"):
+                clean_text = clean_text[7:]
+            if clean_text.endswith("```"):
+                clean_text = clean_text[:-3]
+
+            case_study_data = json.loads(clean_text)
+            print("Success! Case Study generated.")
+            return case_study_data
+
+        except Exception as e:
+            print(f"Error in Case Study Generation (attempt {attempt}): {e}")
+            if attempt < max_retries:
+                time.sleep(60)
+
+    # Fallback attempt
+    print(f"\n--- Switching to Fallback Model for Case Study: {FALLBACK_MODEL_NAME} ---")
+    try:
+        response = client.models.generate_content(
+            model=FALLBACK_MODEL_NAME,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        if response.text:
+             clean_text = response.text.strip()
+             if clean_text.startswith("```json"): clean_text = clean_text[7:]
+             if clean_text.endswith("```"): clean_text = clean_text[:-3]
+             return json.loads(clean_text)
+    except Exception as e:
+        print(f"Fallback failed: {e}")
+        
+    return None
+
 # --- STEP 3: Generate V2 Content (JSON) ---
 def generate_v2_content(reference, bible_text):
     print(f"\n--- Step 3: Generating V2 Devotional Content (JSON) ---")
@@ -532,13 +622,7 @@ def generate_v2_content(reference, bible_text):
     **MODULE 3: THE SOURCE CODE**
     - (This is the full text, we will render it programmatically, no need to generate it).
 
-    **MODULE 4: THE CASE STUDY (The Application)**
-    - `subject`: Name of the historical/contemporary figure.
-    - `narrative`: Detailed story (2-3 paragraphs) of their life/situation relevant to the theme. Go deep here.
-    - `connection`: Explicitly explain HOW this story connects to the passage. This is "The Bridge".
-    - `takeaway`: One sentence connecting it to the user's leadership context.
-
-    **MODULE 5: THE INTEGRATION MATRIX (Soma/Soul/Spirit)**
+    **MODULE 4: THE INTEGRATION MATRIX (Soma/Soul/Spirit)**
     - `soma`: `action` (physical act), `verse`, `explanation` (The "Strategic Why" & "How").
     - `soul`: `pivot` (mental model shift), `verse`, `explanation` (The "Strategic Why" & "How").
     - `spirit`: `breath_prayer_inhale`, `breath_prayer_exhale`, `explanation` (The "Strategic Why" & "How").
@@ -555,12 +639,6 @@ def generate_v2_content(reference, bible_text):
         "anchor": {{
             "key_verses": ["verse 1...", "verse 2..."],
             "insight": "..."
-        }},
-        "case_study": {{
-            "subject": "...",
-            "narrative": "...",
-            "connection": "...",
-            "takeaway": "..."
         }},
         "integration": {{
             "soma": {{ "action": "...", "verse": "...", "explanation": "..." }},
@@ -632,7 +710,7 @@ def generate_v2_content(reference, bible_text):
     return None
 
 # --- STEP 4: Send V2 Email (HTML with Tables) ---
-def send_v2_email(reference, bible_texts, v2_data, quotes_list):
+def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list):
     print(f"\n--- Step 4: Sending V2 Email (HTML) ---")
     
     sender_email = os.getenv("EMAIL_SENDER")
@@ -703,7 +781,8 @@ def send_v2_email(reference, bible_texts, v2_data, quotes_list):
     """
 
     # 4. Case Study Module
-    case_data = v2_data.get("case_study", {})
+    # Check if case study exists (it's passed separately now)
+    case_data = case_study_data or {}
     case_section = f"""
     <div class="card">
         <div class="card-header">Case Study: {case_data.get('subject', 'Historical Example')}</div>
@@ -905,17 +984,23 @@ if __name__ == "__main__":
             combined_html = "".join(bible_texts)
             combined_text = BeautifulSoup(combined_html, "html.parser").get_text(separator="\n\n")
             
-            # 3. Generate V2 Content
+            # 3. Generate Content (3-Step Process)
+            # A. Core Devotional (Header, Anchor, Matrix)
             v2_content = generate_v2_content(ref, combined_text)
             
-            # 3b. Generate Prayer Quotes (Decoupled)
+            # B. Case Study (Deep Dive)
+            case_study = None
+            if v2_content:
+                case_study = generate_case_study(ref, combined_text)
+            
+            # C. Prayer Quotes (Decoupled)
             quotes_list = []
             if v2_content:
                 quotes_list = generate_prayer_quotes(ref, combined_text)
             
             if v2_content:
-                # 4. Send V2 Email
-                send_v2_email(ref, bible_texts, v2_content, quotes_list)
+                # 4. Send V2 Email (Pass all components)
+                send_v2_email(ref, bible_texts, v2_content, case_study, quotes_list)
                 
                 # 5. Store quotes in database
                 if quotes_list:
