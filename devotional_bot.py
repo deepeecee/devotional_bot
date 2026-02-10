@@ -710,28 +710,22 @@ def send_v2_email(reference, bible_texts, v2_data):
 
     md_content += f"""## Integration Matrix
 
-### 1. Soma (Body)
-**Action:** {soma.get('action', '')}
-*"{soma.get('verse', '')}"*
-**Why/How:** {soma.get('explanation', '')}
-
-### 2. Soul (Mind)
-**Pivot:** {soul.get('pivot', '')}
-*"{soul.get('verse', '')}"*
-**Why/How:** {soul.get('explanation', '')}
-
-### 3. Spirit (Breath)
-**Inhale:** {spirit.get('breath_prayer_inhale', '')}
-**Exhale:** {spirit.get('breath_prayer_exhale', '')}
-**Why/How:** {spirit.get('explanation', '')}
+| Dimension | Practice | Why/How |
+| :--- | :--- | :--- |
+| **Soma** (Body) | **Action:** {soma.get('action', '')}<br><br>_"{soma.get('verse', '')}"_ | {soma.get('explanation', '')} |
+| **Soul** (Mind) | **Pivot:** {soul.get('pivot', '')}<br><br>_"{soul.get('verse', '')}"_ | {soul.get('explanation', '')} |
+| **Spirit** (Breath) | **Inhale:** {spirit.get('breath_prayer_inhale', '')}<br>**Exhale:** {spirit.get('breath_prayer_exhale', '')} | {spirit.get('explanation', '')} |
 
 ---
 """
 
     # 6. Quotes
     md_content += "## Contextual Prayer Quotes\n\n"
+    md_content += "| Quote | Author | Context |\n"
+    md_content += "| :--- | :--- | :--- |\n"
     for q in quotes_list:
-        md_content += f"> *\"{q.get('quote')}\"* — **{q.get('author')}**\n> (Context: {q.get('context')})\n\n"
+        clean_quote = q.get('quote', '').replace('\n', ' ')
+        md_content += f"| \"{clean_quote}\" | **{q.get('author')}** | {q.get('context')} |\n"
 
 
     # --- HTML Rendering ---
@@ -759,9 +753,6 @@ def send_v2_email(reference, bible_texts, v2_data):
     </head>
     <body>
         {html_content}
-        <div style="text-align: center; margin-top: 50px; color: #999; font-size: 12px;">
-            Solis Jesu | Coram Deo
-        </div>
     </body>
     </html>
     """
