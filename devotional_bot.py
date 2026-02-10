@@ -389,50 +389,54 @@ def parse_quotes_from_response(response_text):
     return quotes
 
 
-def generate_quotes(reference, bible_text):
+def generate_prayer_quotes(reference, bible_text):
     """
     Generate contextual prayer quotes, excluding previously used ones.
-    
     Returns:
-        tuple: (raw_response_text, parsed_quotes_list) or (None, None) on failure
+        list: [{'quote': '...', 'author': '...', 'context': '...'}, ...] or None on failure
     """
-    print(f"\n--- Step 3b: Generating Contextual Prayer Quotes ---")
+    print(f"\n--- Step 3b: Generating Contextual Prayer Quotes (Decoupled) ---")
     api_key = os.getenv("GOOGLE_API_KEY") 
     if not api_key:
         print("Error: GOOGLE_API_KEY environment variable is not set.")
-        return None, None
+        return None
     
     # Get exclusion list from database
     exclusion_list = quotes_db.format_exclusion_list(max_quotes=360)
-    quote_count = quotes_db.get_quote_count()
-    print(f"Database contains {quote_count} previously used quotes.")
     
-    # Build exclusion instruction if we have history
+    # Build exclusion instruction
     exclusion_instruction = ""
     if exclusion_list:
         exclusion_instruction = f"""
-    
-    **CRITICAL REQUIREMENT - DO NOT USE THESE QUOTES:**
-    The following quotes have been used in previous emails. You MUST select completely different quotes:
-{exclusion_list}
-
-    Generate 3 NEW, UNIQUE quotes that are NOT in the list above.
-    """
+        **CRITICAL EXCLUSION LIST (DO NOT USE THESE QUOTES):**
+        {exclusion_list}
+        """
     
     user_prompt = f"""
     Here is the Bible passage for today: {reference}
     Text: {bible_text}
 
-    **TASK:**
-    Select three inspiring quotes on the power and importance of prayer that are **thematically relevant** to this specific passage.
-    1. **Analyze the themes:** Identify core spiritual themes.
-    2. **Select Quotes:** Find quotes from great evangelists/missionaries.
-    3. **Explain Connection:** Explicitly explain why it connects to this scripture.
+    **OBJECTIVE:**
+    Select 3 profound, Spirit-filled quotes specifically focused on the **POWER AND IMPORTANCE OF PRAYER**.
+    These quotes must be thematically connected to the scripture provided.
+
+    **CRITERIA:**
+    1. **Deeply Spiritual:** Focus on prayer, intercession, communion with God, and spiritual warfare.
+    2. **Theologically Rich:** Use authors like E.M. Bounds, Andrew Murray, Teresa of Avila, Tim Keller, Dallas Willard, etc.
+    3. **Contextual:** The "Context" field must explain strictly HOW this quote connects to the provided scripture.
+
     {exclusion_instruction}
-    Format (use this EXACT format for each quote):
-    *   **Quote:** [The Quote]
-    *   **Author:** [Name]
-    *   **Context & Connection:** [Why this quote matters for this specific passage]
+
+    **OUTPUT FORMAT:**
+    Return ONLY a valid JSON list of objects:
+    [
+        {{
+            "quote": "...",
+            "author": "...",
+            "context": "..."
+        }},
+        ...
+    ]
     """
 
     client = genai.Client(api_key=api_key)
@@ -442,33 +446,37 @@ def generate_quotes(reference, bible_text):
         for attempt in range(1, max_retries + 1):
             try:
                 print(f"{attempt_label} Attempt {attempt}/{max_retries} with {model_to_use}...")
+                
+                config = types.GenerateContentConfig(
+                    system_instruction=SYSTEM_IDENTITY,
+                    safety_settings=SAFETY_SETTINGS,
+                     response_mime_type="application/json"
+                )
+
                 response = client.models.generate_content(
                     model=model_to_use,
                     contents=user_prompt,
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_IDENTITY,
-                        safety_settings=SAFETY_SETTINGS,
-                    )
+                    config=config
                 )
                 
                 if not response.text:
-                    print(f"Warning: Generated quotes text is empty (attempt {attempt}).")
-                    raise ValueError("Empty response from AI model")
+                    raise ValueError("Empty response")
 
-                print("Success! Quotes generated.")
+                 # clean up markdown codefence if present
+                clean_text = response.text.strip()
+                if clean_text.startswith("```json"):
+                    clean_text = clean_text[7:]
+                if clean_text.endswith("```"):
+                    clean_text = clean_text[:-3]
+
+                quotes_data = json.loads(clean_text)
+                print(f"Success! Generated {len(quotes_data)} quotes.")
+                return quotes_data
                 
-                # Parse quotes from response
-                parsed_quotes = parse_quotes_from_response(response.text)
-                print(f"Parsed {len(parsed_quotes)} quotes from response.")
-                
-                return response.text, parsed_quotes
             except Exception as e:
                 print(f"Error in Quote Generation (attempt {attempt}): {e}")
                 if attempt < max_retries:
-                    print("Waiting 60 seconds before retrying...")
                     time.sleep(60)
-                else:
-                    print("All retries exhausted for this model.")
         return None
 
     # 1. Try Primary Model
@@ -482,7 +490,7 @@ def generate_quotes(reference, bible_text):
     if result:
         return result
         
-    return None, None
+    return []
 
 # --- STEP 3: Generate V2 Content (JSON) ---
 def generate_v2_content(reference, bible_text):
@@ -535,12 +543,6 @@ def generate_v2_content(reference, bible_text):
     - `soul`: `pivot` (mental model shift), `verse`, `explanation` (The "Strategic Why" & "How").
     - `spirit`: `breath_prayer_inhale`, `breath_prayer_exhale`, `explanation` (The "Strategic Why" & "How").
 
-    **MODULE 6: CONTEXTUAL PRAYER QUOTES**
-    - Select 3 inspiring quotes from great evangelists/missionaries.
-    - Must be thematically relevant.
-    - `quotes`: List of objects {{"quote": "...", "author": "...", "context": "..."}}
-    {exclusion_instruction}
-
     **OUTPUT FORMAT:**
     Return ONLY a valid JSON object with the following structure:
     {{
@@ -564,12 +566,7 @@ def generate_v2_content(reference, bible_text):
             "soma": {{ "action": "...", "verse": "...", "explanation": "..." }},
             "soul": {{ "pivot": "...", "verse": "...", "explanation": "..." }},
             "spirit": {{ "breath_prayer_inhale": "...", "breath_prayer_exhale": "...", "explanation": "..." }}
-        }},
-        "prayer_quotes": [
-            {{ "quote": "...", "author": "...", "context": "..." }},
-            {{ "quote": "...", "author": "...", "context": "..." }},
-            {{ "quote": "...", "author": "...", "context": "..." }}
-        ]
+        }}
     }}
     """
 
@@ -634,9 +631,9 @@ def generate_v2_content(reference, bible_text):
         
     return None
 
-# --- STEP 4: Send V2 Email (Markdown -> HTML) ---
-def send_v2_email(reference, bible_texts, v2_data):
-    print(f"\n--- Step 4: Sending V2 Email (Markdown) ---")
+# --- STEP 4: Send V2 Email (HTML with Tables) ---
+def send_v2_email(reference, bible_texts, v2_data, quotes_list):
+    print(f"\n--- Step 4: Sending V2 Email (HTML) ---")
     
     sender_email = os.getenv("EMAIL_SENDER")
     password = os.getenv("EMAIL_PASSWORD")
@@ -646,113 +643,227 @@ def send_v2_email(reference, bible_texts, v2_data):
         print("Error: Missing email environment variables.")
         return
 
-    # --- Markdown Construction ---
+    # --- HTML COMPONENTS ---
+    HEADER_COLOR = "#2c3e50"
+    
+    # 1. Header Module
     header_data = v2_data.get("header", {})
+    header_html = f"""
+    <div class="email-header">
+        <h1>{header_data.get('big_idea', 'Daily Devotional')}</h1>
+        <p style="margin-top: 10px; font-size: 18px; opacity: 0.9;">
+            {header_data.get('subject', reference)}
+        </p>
+        <div style="margin-top: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+            Reading Time: {header_data.get('reading_time', '5 mins')} • Mode: {header_data.get('mode', 'Focus')}
+        </div>
+    </div>
+    """
+
+    # 2. Anchor Module
     anchor_data = v2_data.get("anchor", {})
-    case_data = v2_data.get("case_study", {})
-    matrix_data = v2_data.get("integration", {})
-    quotes_list = v2_data.get("prayer_quotes", [])
+    key_verses_html = "".join([f"<p><em>{v}</em></p>" for v in anchor_data.get('key_verses', [])])
+    insight_md = anchor_data.get('insight', '')
+    insight_html = markdown.markdown(insight_md)
+    
+    anchor_section = f"""
+    <div class="card">
+        <div class="card-header">The Anchor</div>
+        <div class="card-body">
+            <blockquote style="border-left: 4px solid {HEADER_COLOR}; margin: 0; padding-left: 20px; color: #444; background-color: #f9f9f9; padding: 15px; border-radius: 4px;">
+                {key_verses_html}
+            </blockquote>
+            <div style="margin-top: 25px; color: #222;">
+                {insight_html}
+            </div>
+        </div>
+    </div>
+    """
 
-    # 1. Header
-    md_content = f"""# {header_data.get('big_idea', 'Daily Devotional')}
-**{header_data.get('subject', reference)}**
-
-*Reading Time: {header_data.get('reading_time', '5 mins')} | Mode: {header_data.get('mode', 'Focus')}*
-
----
-"""
-
-    # 2. Anchor
-    md_content += f"""## The Anchor
-
-> {anchor_data.get('key_verses')[0] if anchor_data.get('key_verses') else ''}...
-
-{anchor_data.get('insight', '')}
-
----
-"""
-
-    # 3. Source Code
-    md_content += f"## The Source Code (ESV)\n\n"
+    # 3. Source Code Module
+    source_content = ""
     if isinstance(bible_texts, list):
         ref_parts = reference.split("; ")
         for i, text in enumerate(bible_texts):
-            header = ref_parts[i] if i < len(ref_parts) else "Scripture"
-            # Strip existing HTML tags from bible_texts for clean markdown if possible,
-            # but bible_texts contains HTML formatting (<p>, <span class="woj">). 
-            # To keep it simple in Markdown, we might just render the HTML directly or trust the markdown converter to handle mixed HTML.
-            # Python-Markdown supports mixed HTML. We will wrap it in a div or just leave it.
-            md_content += f"### {header}\n\n{text}\n\n"
+            header_text = ref_parts[i] if i < len(ref_parts) else "Scripture"
+            source_content += f"""
+            <h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">{header_text}</h3>
+            {text}
+            """
     else:
-        md_content += f"{bible_texts}\n\n"
-    
-    md_content += "---\n"
+        source_content = bible_texts
 
-    # 4. Case Study
-    md_content += f"""## Case Study: {case_data.get('subject', 'Historical Example')}
+    source_section = f"""
+    <div class="card">
+        <div class="card-header">The Source Code (ESV)</div>
+        <div class="card-body scripture-text" style="max-height: 500px; overflow-y: auto;">
+             {source_content}
+        </div>
+    </div>
+    """
 
-**The Narrative:**
-{case_data.get('narrative', '')}
+    # 4. Case Study Module
+    case_data = v2_data.get("case_study", {})
+    case_section = f"""
+    <div class="card">
+        <div class="card-header">Case Study: {case_data.get('subject', 'Historical Example')}</div>
+        <div class="card-body">
+            <p><strong>The Narrative:</strong> {case_data.get('narrative', '')}</p>
+            <p><strong>The Bridge:</strong> {case_data.get('connection', '')}</p>
+            <div style="margin-top: 20px; padding: 15px; background-color: #e8f4f8; border-radius: 8px; color: #2c3e50;">
+                <strong>Takeaway:</strong> {case_data.get('takeaway', '')}
+            </div>
+        </div>
+    </div>
+    """
 
-**The Bridge:**
-{case_data.get('connection', '')}
-
-**Takeaway:**
-* {case_data.get('takeaway', '')}
-
----
-"""
-
-    # 5. Integration Matrix
+    # 5. Integration Matrix Module (HTML Table)
+    matrix_data = v2_data.get("integration", {})
     soma = matrix_data.get("soma", {})
     soul = matrix_data.get("soul", {})
     spirit = matrix_data.get("spirit", {})
+    
+    matrix_section = f"""
+    <div class="card">
+        <div class="card-header">Integration Matrix</div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th width="15%">Dimension</th>
+                        <th width="40%">Practice</th>
+                        <th width="45%">Why/How</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Soma</strong><br><span style="font-size: 12px; color: #666;">Body</span></td>
+                        <td>
+                            <strong>Action:</strong> {soma.get('action', '')}<br><br>
+                            <em>"{soma.get('verse', '')}"</em>
+                        </td>
+                        <td>{soma.get('explanation', '')}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Soul</strong><br><span style="font-size: 12px; color: #666;">Mind</span></td>
+                        <td>
+                            <strong>Pivot:</strong> {soul.get('pivot', '')}<br><br>
+                            <em>"{soul.get('verse', '')}"</em>
+                        </td>
+                        <td>{soul.get('explanation', '')}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Spirit</strong><br><span style="font-size: 12px; color: #666;">Breath</span></td>
+                        <td>
+                            <strong>Inhale:</strong> {spirit.get('breath_prayer_inhale', '')}<br>
+                            <strong>Exhale:</strong> {spirit.get('breath_prayer_exhale', '')}
+                        </td>
+                        <td>{spirit.get('explanation', '')}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
 
-    md_content += f"""## Integration Matrix
+    # 6. Contextual Prayer Quotes Module (HTML Table)
+    # quotes_list passed as argument
+    quotes_rows = ""
+    if quotes_list:
+        for q in quotes_list:
+            quotes_rows += f"""
+            <tr>
+                <td><em>"{q.get('quote')}"</em></td>
+                <td><strong>{q.get('author')}</strong></td>
+                <td>{q.get('context')}</td>
+            </tr>
+            """
+    
+    quotes_section = f"""
+    <div class="card">
+        <div class="card-header">Contextual Prayer Quotes</div>
+        <div class="card-body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th width="45%">Quote</th>
+                        <th width="20%">Author</th>
+                        <th width="35%">Context & Connection</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {quotes_rows}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
 
-| Dimension | Practice | Why/How |
-| :--- | :--- | :--- |
-| **Soma** (Body) | **Action:** {soma.get('action', '')}<br><br>_"{soma.get('verse', '')}"_ | {soma.get('explanation', '')} |
-| **Soul** (Mind) | **Pivot:** {soul.get('pivot', '')}<br><br>_"{soul.get('verse', '')}"_ | {soul.get('explanation', '')} |
-| **Spirit** (Breath) | **Inhale:** {spirit.get('breath_prayer_inhale', '')}<br>**Exhale:** {spirit.get('breath_prayer_exhale', '')} | {spirit.get('explanation', '')} |
-
----
-"""
-
-    # 6. Quotes
-    md_content += "## Contextual Prayer Quotes\n\n"
-    md_content += "| Quote | Author | Context |\n"
-    md_content += "| :--- | :--- | :--- |\n"
-    for q in quotes_list:
-        clean_quote = q.get('quote', '').replace('\n', ' ')
-        md_content += f"| \"{clean_quote}\" | **{q.get('author')}** | {q.get('context')} |\n"
-
-
-    # --- HTML Rendering ---
-    # Convert Markdown to HTML
-    # We use 'tables' extension just in case, though we used list format for Matrix above for simplicity in text logic.
-    html_content = markdown.markdown(md_content, extensions=['tables'])
-
-    # Simple Skeleton
-    final_html = f"""
+    # --- ASSEMBLE HTML BODY ---
+    html_body = f"""
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{header_data.get('subject', 'Daily Devotional')}</title>
         <style>
-            body {{ font-family: sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }}
-            h1 {{ color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; }}
-            h2 {{ color: #2c3e50; margin-top: 30px; }}
-            h3 {{ color: #444; margin-top: 20px; }}
-            blockquote {{ border-left: 4px solid #ccc; padding-left: 15px; color: #555; font-style: italic; }}
-            hr {{ border: 0; height: 1px; background: #ddd; margin: 40px 0; }}
-            img {{ max-width: 100%; }}
-            /* Scripture text styling */
-            p {{ margin-bottom: 15px; }}
+            @import url('https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+            body {{
+                margin: 0; padding: 0; background-color: #f4f7f6;
+                font-family: 'Archivo', sans-serif; font-size: 16px; line-height: 1.6; color: #222;
+            }}
+            .container {{ max-width: 800px; margin: 40px auto; }}
+            .email-header {{
+                background-color: {HEADER_COLOR}; color: #ffffff; padding: 40px 30px;
+                text-align: center; border-radius: 12px 12px 0 0;
+            }}
+            .email-header h1 {{ margin: 0; font-size: 28px; font-weight: 700; }}
+            .card {{
+                background-color: #ffffff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+                margin-bottom: 30px; overflow: hidden;
+            }}
+            .card-header {{
+                background-color: {HEADER_COLOR}; color: #ffffff; padding: 12px 30px;
+                font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;
+            }}
+            .card-body {{ padding: 30px; }}
+            
+            /* Table Styling */
+            .data-table {{
+                width: 100%; border-collapse: collapse; margin-top: 10px;
+            }}
+            .data-table th {{
+                text-align: left; padding: 12px; border-bottom: 2px solid #ddd; background-color: #f8f9fa; font-size: 14px;
+            }}
+            .data-table td {{
+                padding: 15px; border-bottom: 1px solid #eee; vertical-align: top;
+            }}
+            .data-table tr:last-child td {{ border-bottom: none; }}
+            
+            @media only screen and (max-width: 600px) {{
+                .container {{ margin: 0; width: 100% !important; }}
+                .card, .email-header {{ border-radius: 0; }}
+                .card-body {{ padding: 15px; }}
+                .data-table th, .data-table td {{ display: block; width: 100%; }}
+                .data-table th {{ display: none; }} /* Hide headers on mobile */
+                .data-table tr {{ margin-bottom: 20px; display: block; border-bottom: 2px solid #eee; }}
+                .data-table td {{ padding: 10px 0; border: none; }}
+            }}
         </style>
     </head>
     <body>
-        {html_content}
+        <div class="container">
+            {header_html}
+            {anchor_section}
+            {source_section}
+            {case_section}
+            {matrix_section}
+            {quotes_section}
+            <div style="text-align: center; margin: 40px 0; color: #999; font-size: 12px;">
+                Solis Jesu | Coram Deo
+            </div>
+        </div>
     </body>
     </html>
     """
@@ -761,7 +872,7 @@ def send_v2_email(reference, bible_texts, v2_data):
     msg["Subject"] = header_data.get('subject', f"Daily Reading: {reference}")
     msg["From"] = sender_email
     msg["To"] = receiver_email
-    msg.attach(MIMEText(final_html, "html"))
+    msg.attach(MIMEText(html_body, "html"))
 
     # Send Logic (Same as before)
     max_retries = 3
@@ -797,15 +908,17 @@ if __name__ == "__main__":
             # 3. Generate V2 Content
             v2_content = generate_v2_content(ref, combined_text)
             
+            # 3b. Generate Prayer Quotes (Decoupled)
+            quotes_list = []
+            if v2_content:
+                quotes_list = generate_prayer_quotes(ref, combined_text)
+            
             if v2_content:
                 # 4. Send V2 Email
-                send_v2_email(ref, bible_texts, v2_content)
+                send_v2_email(ref, bible_texts, v2_content, quotes_list)
                 
-                # 5. Store quotes in database (optional, but requested to keep functionality)
-                # Parse out the quotes from JSON to format for DB
-                quotes_list = v2_content.get("prayer_quotes", [])
+                # 5. Store quotes in database
                 if quotes_list:
-                    # DB expects specific format logic, adapting...
                     added = quotes_db.add_quotes(quotes_list)
                     print(f"\n--- Stored {added} new quotes in database ---")
             else:
