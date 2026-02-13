@@ -886,9 +886,6 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
             {case_section}
             {matrix_section}
             {quotes_section}
-            <div style="text-align: center; margin: 40px 0; color: #999; font-size: 12px;">
-                Solus Christus | Coram Deo
-            </div>
         </div>
     </body>
     </html>
