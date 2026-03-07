@@ -691,7 +691,7 @@ def generate_v2_content(reference, bible_text):
     return None
 
 # --- STEP 4: Send V2 Email (HTML with Tables) ---
-def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list):
+def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list, core_devo_data):
     print(f"\n--- Step 4: Sending V2 Email (HTML) ---")
     
     sender_email = os.getenv("EMAIL_SENDER")
@@ -757,6 +757,24 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
         </div>
     </div>
     """
+
+    # 3.5 Core Devotional Module
+    core_devo_html = ""
+    if core_devo_data:
+        devo_title = core_devo_data.get('title', 'Devotional Insight')
+        devo_md = core_devo_data.get('content', '')
+        devo_content_html = markdown.markdown(devo_md)
+        
+        core_devo_html = f"""
+        <div class="card" style="border-top: 4px solid {HEADER_COLOR};">
+            <div class="card-body">
+                <h2 style="color: {HEADER_COLOR}; margin-top: 0; margin-bottom: 20px; font-size: 22px;">{devo_title}</h2>
+                <div style="color: #333; font-size: 16px; line-height: 1.7;">
+                    {devo_content_html}
+                </div>
+            </div>
+        </div>
+        """
 
     # 4. Case Study Module
     # Check if case study exists (it's passed separately now)
@@ -888,6 +906,7 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
             {header_html}
             {anchor_section}
             {source_section}
+            {core_devo_html}
             {matrix_section}
             {quotes_section}
             {case_section}
@@ -942,6 +961,11 @@ if __name__ == "__main__":
             if v2_content:
                 case_study = generate_case_study(ref, combined_text, v2_content)
             
+            # B2. Core Devotional (Deep Dive)
+            core_devo = None
+            if v2_content:
+                core_devo = generate_core_devotional(ref, combined_text, v2_content)
+            
             # C. Prayer Quotes (Decoupled)
             quotes_list = []
             if v2_content:
@@ -949,7 +973,7 @@ if __name__ == "__main__":
             
             if v2_content:
                 # Calculate reading time programmatically
-                total_text = f"{combined_text} {v2_content} {case_study} {quotes_list}"
+                total_text = f"{combined_text} {v2_content} {case_study} {core_devo} {quotes_list}"
                 word_count = len(total_text.split())
                 reading_time_mins = max(1, round(word_count / 200)) # 200 wpm
                 if "header" not in v2_content:
@@ -957,7 +981,7 @@ if __name__ == "__main__":
                 v2_content["header"]["reading_time"] = f"{reading_time_mins} mins"
                 
                 # 4. Send V2 Email (Pass all components)
-                send_v2_email(ref, bible_texts, v2_content, case_study, quotes_list)
+                send_v2_email(ref, bible_texts, v2_content, case_study, quotes_list, core_devo)
                 
                 # 5. Store quotes in database
                 if quotes_list:
