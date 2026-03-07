@@ -713,9 +713,6 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
         <p style="margin-top: 10px; font-size: 18px; opacity: 0.9;">
             {header_data.get('subject', reference)}
         </p>
-        <div style="margin-top: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-            Reading Time: {header_data.get('reading_time', '5 mins')} • Mode: {header_data.get('mode', 'Focus')}
-        </div>
     </div>
     """
 
