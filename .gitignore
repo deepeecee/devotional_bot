@@ -1,3 +1,5 @@
 __pycache__/
 .env
 .DS_Store
+venv/
+test_selenium.py

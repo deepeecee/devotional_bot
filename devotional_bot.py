@@ -465,7 +465,7 @@ def generate_prayer_quotes(reference, bible_text):
         
     return []
 
-def generate_case_study(reference, bible_text):
+def generate_case_study(reference, bible_text, v2_content=None):
     """
     Generate a deep-dive Case Study based on the Bible text.
     Returns:
@@ -477,18 +477,26 @@ def generate_case_study(reference, bible_text):
         print("Error: GOOGLE_API_KEY environment variable is not set.")
         return None
 
+    theme_context = ""
+    if v2_content:
+        big_idea = v2_content.get("header", {}).get("big_idea", "")
+        insight = v2_content.get("anchor", {}).get("insight", "")
+        theme_context = f"\n    **CENTRAL DEVOTIONAL THEME:**\n    Big Idea: {big_idea}\n    Key Insight: {insight}\n"
+
     user_prompt = f"""
     Here is the Bible passage for today: {reference}
     Text: {bible_text}
+    {theme_context}
 
     **OBJECTIVE:**
     Generate a **Deep Dive Case Study** that brings the spiritual principles of this text to life through a powerful historical or contemporary narrative.
+    The case study MUST be much more in-depth than a standard summary and heavily focused on the Central Devotional Theme provided above.
     
     **CRITERIA:**
     1.  **Subject:** Choose a historical figure, missionary, or leader whose life vividly illustrates the core theme of the passage.
-    2.  **Narrative:** Write a compelling 2-3 paragraph story.
-    3.  **Connection (The Bridge):** Explicitly explain HOW this story connects to the provided scripture. This must be rooted in the text.
-    4.  **Takeaway:** A single, punchy sentence for application.
+    2.  **Narrative:** Write a very compelling, deeply-researched 3-4 paragraph story. Do not just skim the surface; provide specific historical details or profound psychological insights.
+    3.  **Connection (The Bridge):** Explicitly explain HOW this story connects to the provided scripture and the Central Devotional Theme. This must be a profound, theological connection rooting the story deeply in the text.
+    4.  **Takeaway:** A single, punchy, paradigm-shifting sentence for application.
 
     **OUTPUT FORMAT:**
     Return ONLY a valid JSON object:
@@ -883,9 +891,9 @@ def send_v2_email(reference, bible_texts, v2_data, case_study_data, quotes_list)
             {header_html}
             {anchor_section}
             {source_section}
-            {case_section}
             {matrix_section}
             {quotes_section}
+            {case_section}
         </div>
     </body>
     </html>
@@ -935,7 +943,7 @@ if __name__ == "__main__":
             # B. Case Study (Deep Dive)
             case_study = None
             if v2_content:
-                case_study = generate_case_study(ref, combined_text)
+                case_study = generate_case_study(ref, combined_text, v2_content)
             
             # C. Prayer Quotes (Decoupled)
             quotes_list = []
@@ -943,6 +951,14 @@ if __name__ == "__main__":
                 quotes_list = generate_prayer_quotes(ref, combined_text)
             
             if v2_content:
+                # Calculate reading time programmatically
+                total_text = f"{combined_text} {v2_content} {case_study} {quotes_list}"
+                word_count = len(total_text.split())
+                reading_time_mins = max(1, round(word_count / 200)) # 200 wpm
+                if "header" not in v2_content:
+                    v2_content["header"] = {}
+                v2_content["header"]["reading_time"] = f"{reading_time_mins} mins"
+                
                 # 4. Send V2 Email (Pass all components)
                 send_v2_email(ref, bible_texts, v2_content, case_study, quotes_list)
                 
