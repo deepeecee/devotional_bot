@@ -563,6 +563,100 @@ def generate_case_study(reference, bible_text, v2_content=None):
         
     return None
 
+# --- STEP 3X: Generate Core Devotional (Deep Dive) ---
+def generate_core_devotional(reference, bible_text, v2_content=None):
+    """
+    Generate a disciple-focused deep dive devotional unpacking the key insights.
+    Returns:
+        dict: {'title': '...', 'content': '...'} or None
+    """
+    print(f"\n--- Step 3x: Generating Core Deep Dive Devotional ---")
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        print("Error: GOOGLE_API_KEY environment variable is not set.")
+        return None
+
+    theme_context = ""
+    if v2_content:
+        big_idea = v2_content.get("header", {}).get("big_idea", "")
+        insight = v2_content.get("anchor", {}).get("insight", "")
+        theme_context = f"\n    **CENTRAL DEVOTIONAL THEME:**\n    Big Idea: {big_idea}\n    Key Insight: {insight}\n"
+
+    user_prompt = f"""
+    Here is the Bible passage for today: {reference}
+    Text: {bible_text}
+    {theme_context}
+
+    **OBJECTIVE:**
+    Generate a powerful, deeply theological, and highly practical **Core Devotional** interpreting the scripture readings.
+    This devotional will be placed immediately after the Scripture text in the email.
+    
+    **CRITERIA:**
+    1.  **Audience:** Written for a disciple of Jesus seeking profound spiritual growth.
+    2.  **Focus:** Unpack the key insights of the passage. How do these scriptures challenge modern assumptions? What do they reveal about the Nature of God and the Telos of Man?
+    3.  **Tone:** Epistemic humility combined with lyrical precision. Do not just lecture; confront the heart.
+    4.  **Format:** Provide a 'title' string, and a 'content' string formatted in rich Markdown (use paragraphs, bold text, or bullet points if necessary). Keep it around 400-500 words.
+
+    **OUTPUT FORMAT:**
+    Return ONLY a valid JSON object:
+    {{
+        "title": "...",
+        "content": "..."
+    }}
+    """
+    
+    client = genai.Client(api_key=api_key)
+    max_retries = 3
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"Core Devotional Attempt {attempt}/{max_retries}...")
+            config = types.GenerateContentConfig(
+                system_instruction=SYSTEM_IDENTITY,
+                safety_settings=SAFETY_SETTINGS,
+                response_mime_type="application/json"
+            )
+            
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=user_prompt,
+                config=config
+            )
+
+            if not response.text:
+                raise ValueError("Empty response")
+            
+            clean_text = response.text.strip()
+            if clean_text.startswith("```json"): clean_text = clean_text[7:]
+            if clean_text.endswith("```"): clean_text = clean_text[:-3]
+
+            data = json.loads(clean_text)
+            print("Success! Core Devotional generated.")
+            return data
+
+        except Exception as e:
+            print(f"Error in Core Devotional Generation (attempt {attempt}): {e}")
+            if attempt < max_retries:
+                time.sleep(30)
+
+    # Fallback attempt
+    print(f"\n--- Switching to Fallback Model for Core Devotional: {FALLBACK_MODEL_NAME} ---")
+    try:
+        response = client.models.generate_content(
+            model=FALLBACK_MODEL_NAME,
+            contents=user_prompt,
+            config=types.GenerateContentConfig(response_mime_type="application/json")
+        )
+        if response.text:
+             clean_text = response.text.strip()
+             if clean_text.startswith("```json"): clean_text = clean_text[7:]
+             if clean_text.endswith("```"): clean_text = clean_text[:-3]
+             return json.loads(clean_text)
+    except Exception as e:
+        print(f"Fallback failed: {e}")
+        
+    return None
+
 # --- STEP 3: Generate V2 Content (JSON) ---
 def generate_v2_content(reference, bible_text):
     print(f"\n--- Step 3: Generating V2 Devotional Content (JSON) ---")
